@@ -15,16 +15,35 @@ class PurchaseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'date'          => 'required|date',
-            'supplier_name' => 'required|string',
-            'item_name'     => 'required|string',
-            'quantity'      => 'required|numeric',
-            'unit_price'    => 'required|numeric',
-            'total_amount'  => 'required|numeric',
+            'date'          => 'date',
+            'supplier_name' => 'string',
+            'item_name'     => 'string',
+            'quantity'      => 'numeric',
+            'unit_price'    => 'numeric',
+            'total_amount'  => 'numeric',
+            'description'   => 'nullable|string',
         ]);
         $purchase = Purchase::create($validated);
-        return respone()->json($purchase, 201);
-    }    
+        return response()->json($purchase, 201);
+    }
+    
+    public function update(Request $request, $id)
+    {
+        $purchase = Purchase::findOrFail($id);
+
+        $validated = $request->validate([
+            'date'          => 'date',
+            'supplier_name' => 'string',
+            'item_name'     => 'string',
+            'quantity'      => 'numeric',
+            'unit_price'    => 'numeric',
+            'total_amount'  => 'numeric',
+            'description'   => 'nullable|string',
+        ]);
+
+        $purchase->update($validated);
+        return response()->json($purchase);
+    }
 
     public function destroy($id)
     {
