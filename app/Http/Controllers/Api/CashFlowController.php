@@ -23,7 +23,7 @@ class CashFlowController extends Controller
             'category'      =>'string',
         ]);
         
-        $cashflow = CashFlow::create($validated);
+        $cashFlow = CashFlow::create($validated);
         return response()->json($cashFlow, 201);
     }
 
@@ -32,14 +32,14 @@ class CashFlowController extends Controller
         $cashFlow = CashFlow::findOrFail($id);
 
         $validated = $request->validate([
-            'date'          =>'date',
+            'date'          =>'required|date',
             'type'          =>'in:in,out',
             'description'   =>'string',
             'amount'        =>'numeric|min:0',
             'category'      =>'string',
         ]);
 
-        $cashFlow = CashFlow::update($validated);
+        $cashFlow = update($validated);
         return response()->json($cashFlow);
     }
 
@@ -61,4 +61,3 @@ class CashFlowController extends Controller
         ]);
     }
 }
-

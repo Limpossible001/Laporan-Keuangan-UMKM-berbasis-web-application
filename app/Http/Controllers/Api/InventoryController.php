@@ -24,7 +24,9 @@ class InventoryController extends Controller
         ]);
 
         $validated['last_updated'] = now();
-        return respone()->json($item, 201);
+
+        $item = Inventory::create($validated);
+        return response()->json($item, 201);
     }
 
     public function update(Request $request, $id)
@@ -58,7 +60,7 @@ class InventoryController extends Controller
         $newQuantity = $item->quantity + $request->adjustment;
 
         if ($newQuantity < 0) {
-            return respone()->json([
+            return response()->json([
                 'message' => 'Stok tidak bisa kurang dari 0. Stok saat ini: ' . $item->quantity
             ], 422);
         }
@@ -69,7 +71,7 @@ class InventoryController extends Controller
             'notes'         => $request->notes ?? $item->notes,
         ]);
 
-        return respone()->json($item);
+        return response()->json($item);
     }
 
     public function destroy($id)

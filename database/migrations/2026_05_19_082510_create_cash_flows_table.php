@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('cash_flows', function (Blueprint $table) {
             $table->id();
+            $table->date('date');
+            $table->enum('type', ['in', 'out']);
+            $table->string('description');
+            $table->decimal('amount', 15, 2);
+            $table->string('category');
             $table->timestamps();
         });
     }
