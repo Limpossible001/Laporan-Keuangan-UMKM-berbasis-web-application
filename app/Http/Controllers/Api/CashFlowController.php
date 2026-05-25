@@ -39,7 +39,7 @@ class CashFlowController extends Controller
             'category'      =>'string',
         ]);
 
-        $cashFlow = update($validated);
+        $cashFlow->update($validated);
         return response()->json($cashFlow);
     }
 

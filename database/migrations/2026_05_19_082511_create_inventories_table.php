@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('product_name');
             $table->string('category')->nullable();
-            $table->int('unit_price', 15, 2);
-            $table->int('quantity', 10, 2);
+            $table->decimal('unit_price', 15, 2);
+            $table->decimal('quantity', 10, 2);
             $table->timestamp('last_updated')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();

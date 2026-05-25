@@ -16,9 +16,9 @@ return new class extends Migration
             $table->date('date');
             $table->string('supplier_name');
             $table->string('item_name');
-            $table->int('quantity', 10, 2);
-            $table->int('unit_price', 15, 2);
-            $table->int('total_amount', 15, 2);
+            $table->decimal('quantity', 10, 2);
+            $table->decimal('unit_price', 15, 2);
+            $table->decimal('total_amount', 15, 2);
             $table->text('description')->nullable();
             $table->timestamps();
         });

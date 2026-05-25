@@ -24,11 +24,11 @@ Route::middleware('api')->group(function() {
     Route::delete('/sales/{id}',    [SaleController::class, 'destroy']);
 
     // ── Cash Flows ──────────────────────────────
+    Route::get('/cashflows/summary',   [CashFlowController::class, 'summary']);
     Route::get('/cashflows',           [CashFlowController::class, 'index']);
     Route::post('/cashflows',          [CashFlowController::class, 'store']);
     Route::put('/cashflows/{id}',      [CashFlowController::class, 'update']);
-    Route::delete('/cashflows/{id}',   [CashFlowController::class, 'destroy']);
-    Route::get('/cashflows/summary',   [CashFlowController::class, 'summary']); 
+    Route::delete('/cashflows/{id}',   [CashFlowController::class, 'destroy']); 
 
     // ── Inventory ───────────────────────────────
     Route::get('/inventory',              [InventoryController::class, 'index']);
