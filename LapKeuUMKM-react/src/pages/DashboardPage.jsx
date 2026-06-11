@@ -19,16 +19,21 @@ function ChartPlaceholder({ title, subtitle }) {
 
 export default function DashboardPage() {
   return (
-    <div>
-      <h1 style={styles.pageTitle}>Dashboard</h1>
-      <div style={styles.statsRow}>
-        <StatCard label="TOTAL INCOME"      value="Rp 0" subtitle="— 0% vs last month" />
-        <StatCard label="TOTAL EXPENSES"    value="Rp 0" subtitle="— 0% vs last month" />
-        <StatCard label="NET PROFIT / LOSS" value="Rp 0" subtitle="— 0% vs last month" />
-        <StatCard label="CURRENT BALANCE"   value="Rp 0" subtitle="All time balance" accent />
-      </div>
+      <div>
+        <h1 style={styles.pageTitle}>Dashboard</h1>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gap: 16,
+          marginBottom: 16,
+        }}>
+          <StatCard label="TOTAL INCOME"      value="Rp 0" subtitle="— 0% vs last month" />
+          <StatCard label="TOTAL EXPENSES"    value="Rp 0" subtitle="— 0% vs last month" />
+          <StatCard label="NET PROFIT / LOSS" value="Rp 0" subtitle="— 0% vs last month" />
+          <StatCard label="CURRENT BALANCE"   value="Rp 0" subtitle="All time balance" accent />
+        </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 16, marginBottom: 8 }}>
         <ChartPlaceholder title="Cash Flow Trend"     subtitle="Last 7 days performance" />
         <ChartPlaceholder title="Income vs Expense"   subtitle="Last 7 days comparison" />
       </div>

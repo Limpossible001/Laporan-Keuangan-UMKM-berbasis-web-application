@@ -13,7 +13,6 @@ export default defineConfig({
     },
   },
   assetsInclude: ['**/*.svg', '**/*.csv'],
-  // Untuk integrasi dengan Laravel backend
   server: {
     port: 3000,
     proxy: {
@@ -24,7 +23,7 @@ export default defineConfig({
     }
   },
   build: {
-    outDir: '../public/react',  // Output ke folder public Laravel
+    outDir: '../public/react',
     emptyOutDir: true,
   }
 })
