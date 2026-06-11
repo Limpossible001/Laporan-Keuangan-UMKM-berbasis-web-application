@@ -28,7 +28,7 @@ export default function DashboardPage() {
         <StatCard label="CURRENT BALANCE"   value="Rp 0" subtitle="All time balance" accent />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, marginBottom: 16 }}>
         <ChartPlaceholder title="Cash Flow Trend"     subtitle="Last 7 days performance" />
         <ChartPlaceholder title="Income vs Expense"   subtitle="Last 7 days comparison" />
       </div>
