@@ -17,12 +17,12 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'date'          => 'date',
-            'product_name'  => 'string',
-            'quantity'      => 'numeric|min:0.1',
-            'unit_price'    => 'numeric|min:100',
-            'total_revenue' => 'numeric|min:0',
-            'customer_notes'=> 'nullable|string',
+            'date'           => 'required|date',
+            'product_name'   => 'required|string',
+            'quantity'       => 'required|numeric|min:0.01',
+            'unit_price'     => 'required|numeric|min:1',
+            'total_revenue'  => 'required|numeric|min:0.01',
+            'customer_notes' => 'nullable|string',
         ]);
 
         $inventoryItem = Inventory::where('product_name', $validated['product_name'])->first();
@@ -39,11 +39,11 @@ class SaleController extends Controller
             ], 422);
         }
 
-        // Mengurang stok inventory
+        // Kurangi stok inventory
         $inventoryItem->decrement('quantity', $validated['quantity']);
         $inventoryItem->update(['last_updated' => now()]);
 
-        // Save data penjualan
+        // Simpan data penjualan
         $sale = Sale::create($validated);
 
         return response()->json($sale, 201);
@@ -54,12 +54,12 @@ class SaleController extends Controller
         $sale = Sale::findOrFail($id);
 
         $validated = $request->validate([
-            'date'          => 'date',
-            'product_name'  => 'string',
-            'quantity'      => 'numeric|min:0.1',
-            'unit_price'    => 'numeric|min:100',
-            'total_revenue' => 'numeric|min:0',
-            'customer_notes'=> 'nullable|string',
+            'date'           => 'required|date',
+            'product_name'   => 'required|string',
+            'quantity'       => 'required|numeric|min:0.01',
+            'unit_price'     => 'required|numeric|min:1',
+            'total_revenue'  => 'required|numeric|min:0.01',
+            'customer_notes' => 'nullable|string',
         ]);
 
         $sale->update($validated);
@@ -69,6 +69,6 @@ class SaleController extends Controller
     public function destroy($id)
     {
         Sale::findOrFail($id)->delete();
-        return response()->json(['message' => 'Deleted succesfully']);
+        return response()->json(['message' => 'Deleted successfully']);
     }
 }

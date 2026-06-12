@@ -18,17 +18,25 @@ export default function CashFlowPage() {
   const [data, setData]       = useState([]);
   const [showIn, setShowIn]   = useState(false);
   const [showOut, setShowOut] = useState(false);
-  const [form, setForm]       = useState({ date: "", type: "in", description: "", category: "", amount: "" });
+  const [form, setForm]       = useState({
+    date: "", type: "in", description: "", category: "", amount: ""
+  });
 
-  const set   = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const set     = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const openIn  = () => { setForm(f => ({ ...f, type: "in"  })); setShowIn(true);  };
   const openOut = () => { setForm(f => ({ ...f, type: "out" })); setShowOut(true); };
   const close   = ()  => { setShowIn(false); setShowOut(false); };
 
   const handleAdd = async () => {
+    // ── Validasi wajib isi ──────────────────────────────────
     if (!form.date || !form.description || !form.amount) {
       showNotif("Field wajib harus diisi", "error"); return;
     }
+    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
+    if (Number(form.amount) <= 0) {
+      showNotif("Jumlah harus lebih dari 0", "error"); return;
+    }
+
     try {
       // TODO C.4: const res = await apiFetch("/cashflows", { method: "POST", body: JSON.stringify(form) });
       // TODO C.4: setData(d => [res, ...d]);
@@ -53,7 +61,10 @@ export default function CashFlowPage() {
 
   const CashModal = ({ type }) => (
     <Modal title={`Add Cash ${type === "in" ? "In" : "Out"}`} onClose={close}>
-      <Field label="Transaction Date" type="date" value={form.date} onChange={set("date")} required />
+      <Field
+        label="Transaction Date" type="date"
+        value={form.date} onChange={set("date")} required
+      />
       <div style={{ marginBottom: 14 }}>
         <label style={styles.fieldLabel}>Transaction Type</label>
         <select value={form.type} onChange={set("type")} style={styles.input}>
@@ -61,9 +72,21 @@ export default function CashFlowPage() {
           <option value="out">Cash Out</option>
         </select>
       </div>
-      <Field label="Description" value={form.description} onChange={set("description")} placeholder="Enter description" required />
-      <SelectField label="Category" value={form.category} onChange={set("category")} options={CATEGORIES} required />
-      <Field label="Amount" type="number" value={form.amount} onChange={set("amount")} required />
+      <Field
+        label="Description"
+        value={form.description} onChange={set("description")}
+        placeholder="Enter description" required
+      />
+      <SelectField
+        label="Category"
+        value={form.category} onChange={set("category")}
+        options={CATEGORIES} required
+      />
+      <Field
+        label="Amount (Rp)" type="number"
+        value={form.amount} onChange={set("amount")}
+        min="1" step="1" required
+      />
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
         <Btn variant="outline" onClick={close}>Cancel</Btn>
         <Btn variant={type === "in" ? "success" : "danger"} onClick={handleAdd}>

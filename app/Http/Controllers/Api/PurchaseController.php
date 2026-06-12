@@ -12,32 +12,34 @@ class PurchaseController extends Controller
     {
         return response()->json(Purchase::orderBy('date', 'desc')->get());
     }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'date'          => 'date',
-            'supplier_name' => 'string',
-            'item_name'     => 'string',
-            'quantity'      => 'numeric',
-            'unit_price'    => 'numeric',
-            'total_amount'  => 'numeric',
+            'date'          => 'required|date',
+            'supplier_name' => 'required|string',
+            'item_name'     => 'required|string',
+            'quantity'      => 'required|numeric|min:0.01',
+            'unit_price'    => 'required|numeric|min:1',
+            'total_amount'  => 'required|numeric|min:0.01',
             'description'   => 'nullable|string',
         ]);
+
         $purchase = Purchase::create($validated);
         return response()->json($purchase, 201);
     }
-    
+
     public function update(Request $request, $id)
     {
         $purchase = Purchase::findOrFail($id);
 
         $validated = $request->validate([
-            'date'          => 'date',
-            'supplier_name' => 'string',
-            'item_name'     => 'string',
-            'quantity'      => 'numeric',
-            'unit_price'    => 'numeric',
-            'total_amount'  => 'numeric',
+            'date'          => 'required|date',
+            'supplier_name' => 'required|string',
+            'item_name'     => 'required|string',
+            'quantity'      => 'required|numeric|min:0.01',
+            'unit_price'    => 'required|numeric|min:1',
+            'total_amount'  => 'required|numeric|min:0.01',
             'description'   => 'nullable|string',
         ]);
 
@@ -48,6 +50,6 @@ class PurchaseController extends Controller
     public function destroy($id)
     {
         Purchase::findOrFail($id)->delete();
-        return response()->json(['message' => 'Deleted succesfully']);
+        return response()->json(['message' => 'Deleted successfully']);
     }
 }

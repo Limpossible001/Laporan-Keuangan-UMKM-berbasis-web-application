@@ -16,13 +16,13 @@ class CashFlowController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'date'          =>'date',
-            'type'          =>'in:in,out',
-            'description'   =>'string',
-            'amount'        =>'numeric|min:0',
-            'category'      =>'string',
+            'date'        => 'required|date',
+            'type'        => 'required|in:in,out',
+            'description' => 'required|string',
+            'amount'      => 'required|numeric|min:1',
+            'category'    => 'required|string',
         ]);
-        
+
         $cashFlow = CashFlow::create($validated);
         return response()->json($cashFlow, 201);
     }
@@ -32,27 +32,27 @@ class CashFlowController extends Controller
         $cashFlow = CashFlow::findOrFail($id);
 
         $validated = $request->validate([
-            'date'          =>'required|date',
-            'type'          =>'in:in,out',
-            'description'   =>'string',
-            'amount'        =>'numeric|min:0',
-            'category'      =>'string',
+            'date'        => 'required|date',
+            'type'        => 'required|in:in,out',
+            'description' => 'required|string',
+            'amount'      => 'required|numeric|min:1',
+            'category'    => 'required|string',
         ]);
 
         $cashFlow->update($validated);
         return response()->json($cashFlow);
     }
 
-    public function destroy ($id)
+    public function destroy($id)
     {
         CashFlow::findOrFail($id)->delete();
-        return response()->json(['message'=>'Deleted succesfully']);
+        return response()->json(['message' => 'Deleted successfully']);
     }
 
     public function summary()
     {
-        $cashIn = CashFlow::where('type', 'in')->sum('amount');
-        $cashOut= CashFlow::where('type', 'out')->sum('amount');
+        $cashIn  = CashFlow::where('type', 'in')->sum('amount');
+        $cashOut = CashFlow::where('type', 'out')->sum('amount');
 
         return response()->json([
             'cash_in'       => $cashIn,

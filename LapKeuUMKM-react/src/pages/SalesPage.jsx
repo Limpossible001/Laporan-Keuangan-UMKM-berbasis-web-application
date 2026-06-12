@@ -7,20 +7,35 @@ import styles from "../styles.js";
 
 export default function SalesPage() {
   const { showNotif } = useNotif();
-  const [data, setData]         = useState([]);
+  const [data, setData]           = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm]         = useState({ date: "", product_name: "", quantity: "", unit_price: "", customer_notes: "" });
+  const [form, setForm]           = useState({
+    date: "", product_name: "", quantity: "", unit_price: "", customer_notes: ""
+  });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const handleAdd = async () => {
+    // ── Validasi wajib isi ──────────────────────────────────
     if (!form.date || !form.product_name || !form.quantity || !form.unit_price) {
       showNotif("Field wajib harus diisi", "error"); return;
     }
+    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
+    if (Number(form.quantity) <= 0) {
+      showNotif("Kuantitas harus lebih dari 0", "error"); return;
+    }
+    if (Number(form.unit_price) <= 0) {
+      showNotif("Harga satuan harus lebih dari 0", "error"); return;
+    }
+
     try {
       // TODO C.3: const res = await apiFetch("/sales", { method: "POST", body: JSON.stringify({ ...form, total_revenue: form.quantity * form.unit_price }) });
       // TODO C.3: setData(d => [res, ...d]);
-      const newItem = { id: Date.now(), ...form, total_revenue: form.quantity * form.unit_price };
+      const newItem = {
+        id: Date.now(),
+        ...form,
+        total_revenue: Number(form.quantity) * Number(form.unit_price),
+      };
       setData(d => [newItem, ...d]);
       setForm({ date: "", product_name: "", quantity: "", unit_price: "", customer_notes: "" });
       setShowModal(false);
@@ -58,12 +73,12 @@ export default function SalesPage() {
         </div>
         <Table
           columns={[
-            { key: "date",          label: "DATE" },
-            { key: "product_name",  label: "PRODUCT" },
-            { key: "quantity",      label: "QTY" },
-            { key: "unit_price",    label: "UNIT PRICE",    render: r => toRp(r.unit_price) },
-            { key: "total_revenue", label: "TOTAL REVENUE", render: r => toRp(r.total_revenue) },
-            { key: "customer_notes",label: "NOTES" },
+            { key: "date",           label: "DATE" },
+            { key: "product_name",   label: "PRODUCT" },
+            { key: "quantity",       label: "QTY" },
+            { key: "unit_price",     label: "UNIT PRICE",    render: r => toRp(r.unit_price) },
+            { key: "total_revenue",  label: "TOTAL REVENUE", render: r => toRp(r.total_revenue) },
+            { key: "customer_notes", label: "NOTES" },
             { key: "actions", label: "ACTIONS", render: r => (
               <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
             )},
@@ -75,9 +90,14 @@ export default function SalesPage() {
 
       {showModal && (
         <Modal title="Add Sale" onClose={() => setShowModal(false)}>
-          <Field label="Sale Date" type="date" value={form.date} onChange={set("date")} required />
+          <Field
+            label="Sale Date" type="date"
+            value={form.date} onChange={set("date")} required
+          />
           <div style={{ marginBottom: 14 }}>
-            <label style={styles.fieldLabel}>Product Name <span style={{ color: "#ef4444" }}>*</span></label>
+            <label style={styles.fieldLabel}>
+              Product Name <span style={{ color: "#ef4444" }}>*</span>
+            </label>
             <input
               value={form.product_name} onChange={set("product_name")}
               placeholder="Enter product name"
@@ -88,10 +108,32 @@ export default function SalesPage() {
             {/* TODO C.3: ganti input bebas dengan <select> yang populate dari /api/inventory */}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Quantity Sold" type="number" value={form.quantity}   onChange={set("quantity")}   required />
-            <Field label="Unit Price"    type="number" value={form.unit_price} onChange={set("unit_price")} required />
+            <Field
+              label="Quantity Sold" type="number"
+              value={form.quantity} onChange={set("quantity")}
+              min="0.01" step="0.01" required
+            />
+            <Field
+              label="Unit Price (Rp)" type="number"
+              value={form.unit_price} onChange={set("unit_price")}
+              min="1" step="1" required
+            />
           </div>
-          <Field label="Customer Notes (Optional)" value={form.customer_notes} onChange={set("customer_notes")} placeholder="Optional notes" />
+          {/* Preview total real-time */}
+          {form.quantity > 0 && form.unit_price > 0 && (
+            <div style={{
+              background: "#f0fdf4", border: "1px solid #bbf7d0",
+              borderRadius: 8, padding: "8px 12px", marginBottom: 14,
+              fontSize: 13, color: "#166534",
+            }}>
+              Total Revenue: <strong>{toRp(Number(form.quantity) * Number(form.unit_price))}</strong>
+            </div>
+          )}
+          <Field
+            label="Customer Notes (Optional)"
+            value={form.customer_notes} onChange={set("customer_notes")}
+            placeholder="Optional notes"
+          />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => setShowModal(false)}>Cancel</Btn>
             <Btn variant="success" onClick={handleAdd}>Add Sale</Btn>

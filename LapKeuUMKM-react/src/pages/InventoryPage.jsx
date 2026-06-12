@@ -7,21 +7,33 @@ import styles from "../styles.js";
 
 export default function InventoryPage() {
   const { showNotif } = useNotif();
-  const [data, setData]         = useState([]);
+  const [data, setData]           = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm]         = useState({ product_name: "", category: "", unit_price: "", quantity: "", notes: "" });
+  const [form, setForm]           = useState({
+    product_name: "", category: "", unit_price: "", quantity: "", notes: ""
+  });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const handleAdd = async () => {
+    // ── Validasi wajib isi ──────────────────────────────────
     if (!form.product_name || !form.unit_price || !form.quantity) {
       showNotif("Field wajib harus diisi", "error"); return;
     }
+    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
+    if (Number(form.unit_price) <= 0) {
+      showNotif("Harga satuan harus lebih dari 0", "error"); return;
+    }
+    if (Number(form.quantity) <= 0) {
+      showNotif("Kuantitas awal harus lebih dari 0", "error"); return;
+    }
+
     try {
       // TODO C.2: const res = await apiFetch("/inventory", { method: "POST", body: JSON.stringify(form) });
       // TODO C.2: setData(d => [res, ...d]);
       const newItem = {
-        id: Date.now(), ...form,
+        id: Date.now(),
+        ...form,
         last_updated: new Date().toLocaleDateString("id-ID"),
         status: Number(form.quantity) > 10 ? "OK" : "Low",
       };
@@ -40,16 +52,30 @@ export default function InventoryPage() {
     } catch (e) { showNotif(e.message, "error"); }
   };
 
-  const lowStock = data.filter(r => Number(r.quantity) < 10).length;
+  const lowStock    = data.filter(r => Number(r.quantity) < 10).length;
+  const totalStock  = data.reduce((s, r) => s + Number(r.quantity), 0);
+  const totalValue  = data.reduce((s, r) => s + Number(r.unit_price) * Number(r.quantity), 0);
 
   return (
     <div>
       <h1 style={styles.pageTitle}>Input Inventory</h1>
       <div style={styles.statsRow}>
-        <StatCard label="TOTAL PRODUCTS"  value={data.length}                                    subtitle="Unique items" />
-        <StatCard label="TOTAL STOCK"     value={data.reduce((s, r) => s + Number(r.quantity), 0)} subtitle="Total units" />
-        <StatCard label="LOW STOCK ALERT" value={lowStock}                                        subtitle="Items below 10 units" accent />
+        <StatCard label="TOTAL PRODUCTS"  value={data.length}   subtitle="Unique items" />
+        <StatCard label="TOTAL STOCK"     value={totalStock}    subtitle="Total units" />
+        <StatCard label="LOW STOCK ALERT" value={lowStock}      subtitle="Items below 10 units" accent />
       </div>
+
+      {/* Total nilai inventory */}
+      {data.length > 0 && (
+        <div style={{
+          background: "#eff6ff", border: "1px solid #bfdbfe",
+          borderRadius: 10, padding: "10px 16px", marginBottom: 16,
+          fontSize: 13, color: "#1e40af",
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          📦 Total Nilai Inventory: <strong>{toRp(totalValue)}</strong>
+        </div>
+      )}
 
       <div style={styles.card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -67,7 +93,9 @@ export default function InventoryPage() {
             { key: "quantity",     label: "QUANTITY" },
             { key: "last_updated", label: "LAST UPDATED" },
             { key: "status",       label: "STATUS", render: r => (
-              <span style={{ color: r.status === "OK" ? "#22c55e" : "#f59e0b", fontWeight: 600 }}>{r.status}</span>
+              <span style={{ color: r.status === "OK" ? "#22c55e" : "#f59e0b", fontWeight: 600 }}>
+                {r.status}
+              </span>
             )},
             { key: "actions", label: "ACTIONS", render: r => (
               <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
@@ -80,13 +108,33 @@ export default function InventoryPage() {
 
       {showModal && (
         <Modal title="Add Inventory Item" onClose={() => setShowModal(false)}>
-          <Field label="Product Name" value={form.product_name} onChange={set("product_name")} placeholder="Enter product name" required />
-          <Field label="Category"     value={form.category}     onChange={set("category")}     placeholder="Enter category" />
+          <Field
+            label="Product Name"
+            value={form.product_name} onChange={set("product_name")}
+            placeholder="Enter product name" required
+          />
+          <Field
+            label="Category"
+            value={form.category} onChange={set("category")}
+            placeholder="Enter category"
+          />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Unit Price"       type="number" value={form.unit_price} onChange={set("unit_price")} required />
-            <Field label="Initial Quantity" type="number" value={form.quantity}   onChange={set("quantity")}   required />
+            <Field
+              label="Unit Price (Rp)" type="number"
+              value={form.unit_price} onChange={set("unit_price")}
+              min="1" step="1" required
+            />
+            <Field
+              label="Initial Quantity" type="number"
+              value={form.quantity} onChange={set("quantity")}
+              min="0.01" step="0.01" required
+            />
           </div>
-          <Field label="Notes (Optional)" value={form.notes} onChange={set("notes")} placeholder="Optional notes" />
+          <Field
+            label="Notes (Optional)"
+            value={form.notes} onChange={set("notes")}
+            placeholder="Optional notes"
+          />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => setShowModal(false)}>Cancel</Btn>
             <Btn onClick={handleAdd}>Add Item</Btn>

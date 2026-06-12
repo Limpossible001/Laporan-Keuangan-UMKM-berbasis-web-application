@@ -7,20 +7,35 @@ import styles from "../styles.js";
 
 export default function PurchasesPage() {
   const { showNotif } = useNotif();
-  const [data, setData]         = useState([]);
+  const [data, setData]           = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm]         = useState({ date: "", supplier_name: "", item_name: "", quantity: "", unit_price: "" });
+  const [form, setForm]           = useState({
+    date: "", supplier_name: "", item_name: "", quantity: "", unit_price: ""
+  });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
   const handleAdd = async () => {
+    // ── Validasi wajib isi ──────────────────────────────────
     if (!form.date || !form.supplier_name || !form.item_name || !form.quantity || !form.unit_price) {
       showNotif("Semua field wajib diisi", "error"); return;
     }
+    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
+    if (Number(form.quantity) <= 0) {
+      showNotif("Kuantitas harus lebih dari 0", "error"); return;
+    }
+    if (Number(form.unit_price) <= 0) {
+      showNotif("Harga satuan harus lebih dari 0", "error"); return;
+    }
+
     try {
       // TODO C.1: const res = await apiFetch("/purchases", { method: "POST", body: JSON.stringify({ ...form, total_amount: form.quantity * form.unit_price }) });
       // TODO C.1: setData(d => [res, ...d]);
-      const newItem = { id: Date.now(), ...form, total_amount: form.quantity * form.unit_price };
+      const newItem = {
+        id: Date.now(),
+        ...form,
+        total_amount: Number(form.quantity) * Number(form.unit_price),
+      };
       setData(d => [newItem, ...d]);
       setForm({ date: "", supplier_name: "", item_name: "", quantity: "", unit_price: "" });
       setShowModal(false);
@@ -36,8 +51,8 @@ export default function PurchasesPage() {
     } catch (e) { showNotif(e.message, "error"); }
   };
 
-  const totalAmount  = data.reduce((s, r) => s + Number(r.total_amount), 0);
-  const avgPurchase  = data.length ? totalAmount / data.length : 0;
+  const totalAmount = data.reduce((s, r) => s + Number(r.total_amount), 0);
+  const avgPurchase = data.length ? totalAmount / data.length : 0;
 
   return (
     <div>
@@ -75,13 +90,42 @@ export default function PurchasesPage() {
 
       {showModal && (
         <Modal title="Add Purchase" onClose={() => setShowModal(false)}>
-          <Field label="Transaction Date" type="date" value={form.date}          onChange={set("date")}          required />
-          <Field label="Supplier Name"               value={form.supplier_name}  onChange={set("supplier_name")} placeholder="Enter supplier name" required />
-          <Field label="Item Name"                   value={form.item_name}      onChange={set("item_name")}     placeholder="Enter item name"     required />
+          <Field
+            label="Transaction Date" type="date"
+            value={form.date} onChange={set("date")} required
+          />
+          <Field
+            label="Supplier Name"
+            value={form.supplier_name} onChange={set("supplier_name")}
+            placeholder="Enter supplier name" required
+          />
+          <Field
+            label="Item Name"
+            value={form.item_name} onChange={set("item_name")}
+            placeholder="Enter item name" required
+          />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Quantity"   type="number" value={form.quantity}   onChange={set("quantity")}   required />
-            <Field label="Unit Price" type="number" value={form.unit_price} onChange={set("unit_price")} required />
+            <Field
+              label="Quantity" type="number"
+              value={form.quantity} onChange={set("quantity")}
+              min="0.01" step="0.01" required
+            />
+            <Field
+              label="Unit Price (Rp)" type="number"
+              value={form.unit_price} onChange={set("unit_price")}
+              min="1" step="1" required
+            />
           </div>
+          {/* Preview total real-time */}
+          {form.quantity > 0 && form.unit_price > 0 && (
+            <div style={{
+              background: "#f0fdf4", border: "1px solid #bbf7d0",
+              borderRadius: 8, padding: "8px 12px", marginBottom: 14,
+              fontSize: 13, color: "#166534",
+            }}>
+              Total: <strong>{toRp(Number(form.quantity) * Number(form.unit_price))}</strong>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => setShowModal(false)}>Cancel</Btn>
             <Btn onClick={handleAdd}>Add Purchase</Btn>
