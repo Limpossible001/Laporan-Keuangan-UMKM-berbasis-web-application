@@ -11,27 +11,23 @@ class SaleController extends Controller
 {
     public function index()
     {
-        return response()->json(Sale::orderBy('date', 'desc')->get());
+        return response()->json(
+            Sale::with('inventory')->orderBy('date', 'desc')->get()
+        );
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'date'           => 'required|date',
-            'product_name'   => 'required|string',
+            'inventory_id'   => 'required|exists:inventories,id',
             'quantity'       => 'required|numeric|min:0.01',
             'unit_price'     => 'required|numeric|min:1',
             'total_revenue'  => 'required|numeric|min:0.01',
             'customer_notes' => 'nullable|string',
         ]);
 
-        $inventoryItem = Inventory::where('product_name', $validated['product_name'])->first();
-
-        if (!$inventoryItem) {
-            return response()->json([
-                'message' => 'Produk tidak ditemukan di inventory.'
-            ], 422);
-        }
+        $inventoryItem = Inventory::findOrFail($validated['inventory_id']);
 
         if ($inventoryItem->quantity < $validated['quantity']) {
             return response()->json([
@@ -46,7 +42,7 @@ class SaleController extends Controller
         // Simpan data penjualan
         $sale = Sale::create($validated);
 
-        return response()->json($sale, 201);
+        return response()->json($sale->load('inventory'), 201);
     }
 
     public function update(Request $request, $id)
@@ -55,15 +51,17 @@ class SaleController extends Controller
 
         $validated = $request->validate([
             'date'           => 'required|date',
-            'product_name'   => 'required|string',
+            'inventory_id'   => 'required|exists:inventories,id',
             'quantity'       => 'required|numeric|min:0.01',
             'unit_price'     => 'required|numeric|min:1',
             'total_revenue'  => 'required|numeric|min:0.01',
             'customer_notes' => 'nullable|string',
         ]);
 
+        // Catatan: sama seperti Purchase, penyesuaian stok akibat edit
+        // TIDAK ditangani di v4.0 ini — direkomendasikan dibahas di Tahap berikutnya.
         $sale->update($validated);
-        return response()->json($sale);
+        return response()->json($sale->load('inventory'));
     }
 
     public function destroy($id)

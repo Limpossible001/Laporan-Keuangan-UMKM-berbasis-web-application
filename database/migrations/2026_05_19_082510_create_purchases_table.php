@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('purchases', function (Blueprint $table) {
             $table->id();
             $table->date('date');
-            $table->string('supplier_name');
-            $table->string('item_name');
+            $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('restricted');
+            $table->foreignId('inventory_id')->constrained('inventories')->onDelete('restricted');
+            
             $table->decimal('quantity', 10, 2);
             $table->decimal('unit_price', 15, 2);
             $table->decimal('total_amount', 15, 2);

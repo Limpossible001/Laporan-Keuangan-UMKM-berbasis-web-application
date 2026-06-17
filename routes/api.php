@@ -7,11 +7,19 @@ use App\Http\Controllers\Api\PurchaseController;
 use App\Http\Controllers\Api\SaleController;
 use App\Http\Controllers\Api\CashFlowController;
 use App\Http\Controllers\Api\InventoryController;
+use App\Http\Controllers\Api\SupplierController;
+use App\Http\Controllers\Api\ActivityLogController;
 
 //Semua route API  diawali /api/...
 Route::middleware('api')->group(function() {
-   
-    // Purchases
+
+    // ── Suppliers (BARU v4.0) ───────────────────
+    Route::get('/suppliers',           [SupplierController::class, 'index']);
+    Route::post('/suppliers',          [SupplierController::class, 'store']);
+    Route::put('/suppliers/{id}',      [SupplierController::class, 'update']);
+    Route::delete('/suppliers/{id}',   [SupplierController::class, 'destroy']);
+
+    // ── Purchases ───────────────────────────────
     Route::get('/purchases', [PurchaseController::class, 'index']);
     Route::post('/purchases', [PurchaseController::class, 'store']);
     Route::put('/purchases/{id}', [PurchaseController::class, 'update']);
@@ -28,13 +36,16 @@ Route::middleware('api')->group(function() {
     Route::get('/cashflows',           [CashFlowController::class, 'index']);
     Route::post('/cashflows',          [CashFlowController::class, 'store']);
     Route::put('/cashflows/{id}',      [CashFlowController::class, 'update']);
-    Route::delete('/cashflows/{id}',   [CashFlowController::class, 'destroy']); 
+    Route::delete('/cashflows/{id}',   [CashFlowController::class, 'destroy']);
 
     // ── Inventory ───────────────────────────────
     Route::get('/inventory',              [InventoryController::class, 'index']);
     Route::post('/inventory',             [InventoryController::class, 'store']);
     Route::put('/inventory/{id}',         [InventoryController::class, 'update']);
     Route::delete('/inventory/{id}',      [InventoryController::class, 'destroy']);
-    Route::patch('/inventory/{id}/adjust',[InventoryController::class, 'adjustStock']); 
+    Route::patch('/inventory/{id}/adjust',[InventoryController::class, 'adjustStock']);
+
+    // ── Activity Log (BARU v4.0) ────────────────
+    Route::get('/activity-logs', [ActivityLogController::class, 'index']);
 
 });

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sales', function (Blueprint $table) {
             $table->id();
             $table->date('date');
-            $table->string('product_name');
+            $table->foreignId('inventory_id')->constrained('inventories')->onDelete('restrict');
             $table->decimal('quantity', 10, 2);
             $table->decimal('unit_price', 15, 2);
             $table->decimal('total_revenue', 15, 2);
