@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp } from "../components.jsx";
 import styles from "../styles.js";
-// import { apiFetch } from "../api.js"; // TODO C.4
+import { apiFetch } from "../api.js";
 
 const CATEGORIES = [
   { value: "operasional", label: "Operasional" },
@@ -16,6 +16,7 @@ const CATEGORIES = [
 export default function CashFlowPage() {
   const { showNotif } = useNotif();
   const [data, setData]       = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showIn, setShowIn]   = useState(false);
   const [showOut, setShowOut] = useState(false);
   const [form, setForm]       = useState({
@@ -27,33 +28,54 @@ export default function CashFlowPage() {
   const openOut = () => { setForm(f => ({ ...f, type: "out" })); setShowOut(true); };
   const close   = ()  => { setShowIn(false); setShowOut(false); };
 
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/cashflows");
+      setData(res);
+    } catch (e) {
+      showNotif(e.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
   const handleAdd = async () => {
-    // ── Validasi wajib isi ──────────────────────────────────
     if (!form.date || !form.description || !form.amount) {
       showNotif("Field wajib harus diisi", "error"); return;
     }
-    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
     if (Number(form.amount) <= 0) {
       showNotif("Jumlah harus lebih dari 0", "error"); return;
     }
 
     try {
-      // TODO C.4: const res = await apiFetch("/cashflows", { method: "POST", body: JSON.stringify(form) });
-      // TODO C.4: setData(d => [res, ...d]);
-      const newItem = { id: Date.now(), ...form };
-      setData(d => [newItem, ...d]);
+      const payload = {
+        date: form.date,
+        type: form.type,
+        description: form.description,
+        category: form.category,
+        amount: Number(form.amount),
+      };
+      const res = await apiFetch("/cashflows", { method: "POST", body: JSON.stringify(payload) });
+      setData(d => [res, ...d]);
       setForm({ date: "", type: "in", description: "", category: "", amount: "" });
       close();
       showNotif(`Cash ${form.type === "in" ? "In" : "Out"} berhasil ditambahkan`);
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
   const handleDelete = async (id) => {
     try {
-      // TODO C.4: await apiFetch(`/cashflows/${id}`, { method: "DELETE" });
+      await apiFetch(`/cashflows/${id}`, { method: "DELETE" });
       setData(d => d.filter(x => x.id !== id));
       showNotif("Data berhasil dihapus");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
   const cashIn  = data.filter(r => r.type === "in" ).reduce((s, r) => s + Number(r.amount), 0);
@@ -132,7 +154,7 @@ export default function CashFlowPage() {
             )},
           ]}
           data={data}
-          emptyMsg='No cash flow records yet. Click "Add Cash In" or "Add Cash Out" to create one.'
+          emptyMsg={loading ? "Memuat data..." : 'No cash flow records yet. Click "Add Cash In" or "Add Cash Out" to create one.'}
         />
       </div>
 

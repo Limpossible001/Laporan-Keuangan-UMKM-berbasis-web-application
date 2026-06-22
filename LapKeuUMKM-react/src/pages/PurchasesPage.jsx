@@ -1,51 +1,119 @@
-import { useState } from "react";
-import { StatCard, Btn, Table, Modal, Field } from "../components.jsx";
+import { useState, useEffect } from "react";
+import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp } from "../components.jsx";
 import styles from "../styles.js";
-// import { apiFetch } from "../api.js"; // TODO C.1
+import { apiFetch } from "../api.js";
 
 export default function PurchasesPage() {
   const { showNotif } = useNotif();
-  const [data, setData]         = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm]         = useState({ date: "", supplier_name: "", item_name: "", quantity: "", unit_price: "" });
+  const [data, setData]               = useState([]);
+  const [suppliers, setSuppliers]     = useState([]);
+  const [inventory, setInventory]     = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [showModal, setShowModal]     = useState(false);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
 
-  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const [form, setForm] = useState({
+    date: "", supplier_id: "", inventory_id: "", quantity: "", unit_price: ""
+  });
+  const [supplierForm, setSupplierForm] = useState({
+    name: "", contact_person: "", phone: "", address: "", notes: ""
+  });
 
-  const handleAdd = async () => {
-    if (!form.date || !form.supplier_name || !form.item_name || !form.quantity || !form.unit_price) {
-      showNotif("Semua field wajib diisi", "error"); return;
-  // TAMBAH INI ↓
-  if (Number(form.quantity) <= 0) {
-    showNotif("Kuantitas harus lebih dari 0", "error"); return;
-  }
-  if (Number(form.unit_price) <= 0) {
-    showNotif("Harga satuan harus lebih dari 0", "error"); return;
-  }
-  // ...lanjut handleAdd  
-    }
+  const set         = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const setSupplier = k => e => setSupplierForm(f => ({ ...f, [k]: e.target.value }));
+
+  // ── Load semua data yang dibutuhkan halaman ini ──────────
+  const loadAll = async () => {
+    setLoading(true);
     try {
-      // TODO C.1: const res = await apiFetch("/purchases", { method: "POST", body: JSON.stringify({ ...form, total_amount: form.quantity * form.unit_price }) });
-      // TODO C.1: setData(d => [res, ...d]);
-      const newItem = { id: Date.now(), ...form, total_amount: form.quantity * form.unit_price };
-      setData(d => [newItem, ...d]);
-      setForm({ date: "", supplier_name: "", item_name: "", quantity: "", unit_price: "" });
+      const [purchasesRes, suppliersRes, inventoryRes] = await Promise.all([
+        apiFetch("/purchases"),
+        apiFetch("/suppliers"),
+        apiFetch("/inventory"),
+      ]);
+      setData(purchasesRes);
+      setSuppliers(suppliersRes);
+      setInventory(inventoryRes);
+    } catch (e) {
+      showNotif(e.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadAll(); }, []);
+
+  // ── Submit form Purchase ─────────────────────────────────
+  const handleAdd = async () => {
+    if (!form.date || !form.supplier_id || !form.inventory_id || !form.quantity || !form.unit_price) {
+      showNotif("Semua field wajib diisi", "error"); return;
+    }
+    if (Number(form.quantity) <= 0) {
+      showNotif("Kuantitas harus lebih dari 0", "error"); return;
+    }
+    if (Number(form.unit_price) <= 0) {
+      showNotif("Harga satuan harus lebih dari 0", "error"); return;
+    }
+
+    try {
+      const payload = {
+        date: form.date,
+        supplier_id: Number(form.supplier_id),
+        inventory_id: Number(form.inventory_id),
+        quantity: Number(form.quantity),
+        unit_price: Number(form.unit_price),
+        total_amount: Number(form.quantity) * Number(form.unit_price),
+      };
+      const res = await apiFetch("/purchases", { method: "POST", body: JSON.stringify(payload) });
+      setData(d => [res, ...d]);
+
+      // Stok inventory bertambah di BE — refresh data inventory lokal biar dropdown & qty akurat
+      const freshInventory = await apiFetch("/inventory");
+      setInventory(freshInventory);
+
+      setForm({ date: "", supplier_id: "", inventory_id: "", quantity: "", unit_price: "" });
       setShowModal(false);
       showNotif("Data pembelian berhasil ditambahkan");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
   const handleDelete = async (id) => {
     try {
-      // TODO C.1: await apiFetch(`/purchases/${id}`, { method: "DELETE" });
+      await apiFetch(`/purchases/${id}`, { method: "DELETE" });
       setData(d => d.filter(x => x.id !== id));
       showNotif("Data berhasil dihapus");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
-  const totalAmount  = data.reduce((s, r) => s + Number(r.total_amount), 0);
-  const avgPurchase  = data.length ? totalAmount / data.length : 0;
+  // ── Submit modal cepat "+Add Supplier" ───────────────────
+  const handleAddSupplier = async () => {
+    if (!supplierForm.name) {
+      showNotif("Nama supplier wajib diisi", "error"); return;
+    }
+    try {
+      const res = await apiFetch("/suppliers", { method: "POST", body: JSON.stringify(supplierForm) });
+      setSuppliers(s => [res, ...s]);
+      // Langsung pilih supplier yang baru dibuat di form Purchase (kalau modalnya sedang terbuka)
+      setForm(f => ({ ...f, supplier_id: String(res.id) }));
+      setSupplierForm({ name: "", contact_person: "", phone: "", address: "", notes: "" });
+      setShowSupplierModal(false);
+      showNotif("Supplier berhasil ditambahkan, langsung terpilih di form");
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
+  };
+
+  const totalAmount = data.reduce((s, r) => s + Number(r.total_amount), 0);
+  const avgPurchase = data.length ? totalAmount / data.length : 0;
+
+  const supplierOptions  = suppliers.map(s => ({ value: String(s.id), label: s.name }));
+  const inventoryOptions = inventory.map(i => ({ value: String(i.id), label: `${i.product_name} (stok: ${i.quantity})` }));
 
   return (
     <div>
@@ -62,13 +130,16 @@ export default function PurchasesPage() {
             <h3 style={styles.cardTitle}>Purchase Records</h3>
             <p style={styles.cardSub}>All purchase transactions</p>
           </div>
-          <Btn onClick={() => setShowModal(true)}>+ Add Purchase</Btn>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="outline" onClick={() => setShowSupplierModal(true)}>+ Add Supplier</Btn>
+            <Btn onClick={() => setShowModal(true)}>+ Add Purchase</Btn>
+          </div>
         </div>
         <Table
           columns={[
             { key: "date",          label: "DATE" },
-            { key: "supplier_name", label: "SUPPLIER" },
-            { key: "item_name",     label: "ITEM" },
+            { key: "supplier",      label: "SUPPLIER", render: r => r.supplier?.name ?? "—" },
+            { key: "inventory",     label: "ITEM",      render: r => r.inventory?.product_name ?? "—" },
             { key: "quantity",      label: "QTY" },
             { key: "unit_price",    label: "UNIT PRICE",  render: r => toRp(r.unit_price) },
             { key: "total_amount",  label: "TOTAL",       render: r => toRp(r.total_amount) },
@@ -77,22 +148,91 @@ export default function PurchasesPage() {
             )},
           ]}
           data={data}
-          emptyMsg='No purchase records yet. Click "Add Purchase" to create one.'
+          emptyMsg={loading ? "Memuat data..." : 'No purchase records yet. Click "Add Purchase" to create one.'}
         />
       </div>
 
+      {/* Modal: Add Purchase */}
       {showModal && (
         <Modal title="Add Purchase" onClose={() => setShowModal(false)}>
-          <Field label="Transaction Date" type="date" value={form.date}          onChange={set("date")}          required />
-          <Field label="Supplier Name"               value={form.supplier_name}  onChange={set("supplier_name")} placeholder="Enter supplier name" required />
-          <Field label="Item Name"                   value={form.item_name}      onChange={set("item_name")}     placeholder="Enter item name"     required />
+          <Field label="Transaction Date" type="date" value={form.date} onChange={set("date")} required />
+
+          {suppliers.length === 0 ? (
+            <div style={{
+              background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+              padding: "10px 12px", marginBottom: 14, fontSize: 13, color: "#9a3412",
+            }}>
+              Belum ada supplier. Klik "+ Add Supplier" dulu sebelum mencatat pembelian.
+            </div>
+          ) : (
+            <SelectField
+              label="Supplier" value={form.supplier_id} onChange={set("supplier_id")}
+              options={supplierOptions} required
+            />
+          )}
+
+          {inventory.length === 0 ? (
+            <div style={{
+              background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+              padding: "10px 12px", marginBottom: 14, fontSize: 13, color: "#9a3412",
+            }}>
+              Belum ada item inventory. Tambahkan item di halaman Input Inventory dulu.
+            </div>
+          ) : (
+            <SelectField
+              label="Item" value={form.inventory_id} onChange={set("inventory_id")}
+              options={inventoryOptions} required
+            />
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Quantity"   type="number" value={form.quantity}   onChange={set("quantity")}   required />
-            <Field label="Unit Price" type="number" value={form.unit_price} onChange={set("unit_price")} required />
+            <Field label="Quantity"   type="number" value={form.quantity}   onChange={set("quantity")}   min="0.01" step="0.01" required />
+            <Field label="Unit Price" type="number" value={form.unit_price} onChange={set("unit_price")} min="1" step="1" required />
           </div>
+
+          {form.quantity > 0 && form.unit_price > 0 && (
+            <div style={{
+              background: "#eff6ff", border: "1px solid #bfdbfe",
+              borderRadius: 8, padding: "8px 12px", marginBottom: 14,
+              fontSize: 13, color: "#1e40af",
+            }}>
+              Total: <strong>{toRp(Number(form.quantity) * Number(form.unit_price))}</strong>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => setShowModal(false)}>Cancel</Btn>
             <Btn onClick={handleAdd}>Add Purchase</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Add Supplier (cepat, tanpa pindah halaman) */}
+      {showSupplierModal && (
+        <Modal title="Add Supplier" onClose={() => setShowSupplierModal(false)}>
+          <Field
+            label="Supplier Name"
+            value={supplierForm.name} onChange={setSupplier("name")}
+            placeholder="Enter supplier name" required
+          />
+          <Field
+            label="Contact Person"
+            value={supplierForm.contact_person} onChange={setSupplier("contact_person")}
+            placeholder="Optional"
+          />
+          <Field
+            label="Phone"
+            value={supplierForm.phone} onChange={setSupplier("phone")}
+            placeholder="Optional"
+          />
+          <Field
+            label="Address"
+            value={supplierForm.address} onChange={setSupplier("address")}
+            placeholder="Optional"
+          />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+            <Btn variant="outline" onClick={() => setShowSupplierModal(false)}>Cancel</Btn>
+            <Btn onClick={handleAddSupplier}>Add Supplier</Btn>
           </div>
         </Modal>
       )}

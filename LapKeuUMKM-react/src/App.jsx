@@ -8,6 +8,7 @@ import PurchasesPage    from "./pages/PurchasesPage.jsx";
 import SalesPage        from "./pages/SalesPage.jsx";
 import CashFlowPage     from "./pages/CashFlowPage.jsx";
 import InventoryPage    from "./pages/InventoryPage.jsx";
+import SuppliersPage    from "./pages/SuppliersPage.jsx";
 import ReportsPage      from "./pages/ReportsPage.jsx";
 import ActivityLogPage  from "./pages/ActivityLogPage.jsx";
 import PanduanPage      from "./pages/PanduanPage.jsx";
@@ -23,6 +24,7 @@ const ROUTES = {
   SALES:        "/sales",
   CASHFLOW:     "/cashflow",
   INVENTORY:    "/inventory",
+  SUPPLIERS:    "/suppliers",
   REPORTS:      "/reports",
   ACTIVITY_LOG: "/activity-log",
   PANDUAN:      "/panduan",
@@ -54,6 +56,7 @@ function renderPage(path, navigate) {
     case ROUTES.SALES:        return <SalesPage />;
     case ROUTES.CASHFLOW:     return <CashFlowPage />;
     case ROUTES.INVENTORY:    return <InventoryPage />;
+    case ROUTES.SUPPLIERS:    return <SuppliersPage />;
     case ROUTES.REPORTS:      return <ReportsPage />;
     case ROUTES.ACTIVITY_LOG: return <ActivityLogPage />;
     case ROUTES.PANDUAN:      return <PanduanPage />;

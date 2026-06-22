@@ -1,58 +1,106 @@
-import { useState } from "react";
-import { StatCard, Btn, Table, Modal, Field } from "../components.jsx";
+import { useState, useEffect } from "react";
+import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp } from "../components.jsx";
 import styles from "../styles.js";
-// import { apiFetch } from "../api.js"; // TODO C.3
+import { apiFetch } from "../api.js";
 
 export default function SalesPage() {
   const { showNotif } = useNotif();
   const [data, setData]           = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]           = useState({
-    date: "", product_name: "", quantity: "", unit_price: "", customer_notes: ""
+    date: "", inventory_id: "", quantity: "", unit_price: "", customer_notes: ""
   });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const loadAll = async () => {
+    setLoading(true);
+    try {
+      const [salesRes, inventoryRes] = await Promise.all([
+        apiFetch("/sales"),
+        apiFetch("/inventory"),
+      ]);
+      setData(salesRes);
+      setInventory(inventoryRes);
+    } catch (e) {
+      showNotif(e.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadAll(); }, []);
+
+  // Saat item dipilih, auto-isi unit_price dari harga jual di inventory (bisa diedit manual)
+  const handleInventoryChange = (e) => {
+    const id = e.target.value;
+    const item = inventory.find(i => String(i.id) === id);
+    setForm(f => ({
+      ...f,
+      inventory_id: id,
+      unit_price: item ? item.unit_price : f.unit_price,
+    }));
+  };
+
+  const selectedItem = inventory.find(i => String(i.id) === String(form.inventory_id));
+
   const handleAdd = async () => {
-    // ── Validasi wajib isi ──────────────────────────────────
-    if (!form.date || !form.product_name || !form.quantity || !form.unit_price) {
+    if (!form.date || !form.inventory_id || !form.quantity || !form.unit_price) {
       showNotif("Field wajib harus diisi", "error"); return;
     }
-    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
     if (Number(form.quantity) <= 0) {
       showNotif("Kuantitas harus lebih dari 0", "error"); return;
     }
     if (Number(form.unit_price) <= 0) {
       showNotif("Harga satuan harus lebih dari 0", "error"); return;
     }
+    // Validasi stok di sisi FE dulu untuk feedback cepat (BE tetap validasi ulang)
+    if (selectedItem && Number(form.quantity) > Number(selectedItem.quantity)) {
+      showNotif(`Stok tidak mencukupi. Stok tersedia: ${selectedItem.quantity}`, "error"); return;
+    }
 
     try {
-      // TODO C.3: const res = await apiFetch("/sales", { method: "POST", body: JSON.stringify({ ...form, total_revenue: form.quantity * form.unit_price }) });
-      // TODO C.3: setData(d => [res, ...d]);
-      const newItem = {
-        id: Date.now(),
-        ...form,
+      const payload = {
+        date: form.date,
+        inventory_id: Number(form.inventory_id),
+        quantity: Number(form.quantity),
+        unit_price: Number(form.unit_price),
         total_revenue: Number(form.quantity) * Number(form.unit_price),
+        customer_notes: form.customer_notes,
       };
-      setData(d => [newItem, ...d]);
-      setForm({ date: "", product_name: "", quantity: "", unit_price: "", customer_notes: "" });
+      const res = await apiFetch("/sales", { method: "POST", body: JSON.stringify(payload) });
+      setData(d => [res, ...d]);
+
+      // Stok inventory berkurang di BE — refresh agar dropdown & sisa stok akurat
+      const freshInventory = await apiFetch("/inventory");
+      setInventory(freshInventory);
+
+      setForm({ date: "", inventory_id: "", quantity: "", unit_price: "", customer_notes: "" });
       setShowModal(false);
       showNotif("Data penjualan berhasil ditambahkan");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
   const handleDelete = async (id) => {
     try {
-      // TODO C.3: await apiFetch(`/sales/${id}`, { method: "DELETE" });
+      await apiFetch(`/sales/${id}`, { method: "DELETE" });
       setData(d => d.filter(x => x.id !== id));
       showNotif("Data berhasil dihapus");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
   const totalRevenue = data.reduce((s, r) => s + Number(r.total_revenue), 0);
   const totalItems   = data.reduce((s, r) => s + Number(r.quantity), 0);
+
+  const inventoryOptions = inventory.map(i => ({ value: String(i.id), label: `${i.product_name} (stok: ${i.quantity})` }));
 
   return (
     <div>
@@ -74,7 +122,7 @@ export default function SalesPage() {
         <Table
           columns={[
             { key: "date",           label: "DATE" },
-            { key: "product_name",   label: "PRODUCT" },
+            { key: "inventory",      label: "PRODUCT",       render: r => r.inventory?.product_name ?? "—" },
             { key: "quantity",       label: "QTY" },
             { key: "unit_price",     label: "UNIT PRICE",    render: r => toRp(r.unit_price) },
             { key: "total_revenue",  label: "TOTAL REVENUE", render: r => toRp(r.total_revenue) },
@@ -84,29 +132,34 @@ export default function SalesPage() {
             )},
           ]}
           data={data}
-          emptyMsg='No sales records yet. Click "Add Sale" to create one.'
+          emptyMsg={loading ? "Memuat data..." : 'No sales records yet. Click "Add Sale" to create one.'}
         />
       </div>
 
       {showModal && (
         <Modal title="Add Sale" onClose={() => setShowModal(false)}>
-          <Field
-            label="Sale Date" type="date"
-            value={form.date} onChange={set("date")} required
-          />
-          <div style={{ marginBottom: 14 }}>
-            <label style={styles.fieldLabel}>
-              Product Name <span style={{ color: "#ef4444" }}>*</span>
-            </label>
-            <input
-              value={form.product_name} onChange={set("product_name")}
-              placeholder="Enter product name"
-              style={styles.input}
-              onFocus={e => { e.target.style.borderColor = "#4F46E5"; e.target.style.boxShadow = "0 0 0 3px rgba(79,70,229,.12)"; }}
-              onBlur={e => { e.target.style.borderColor = "#e5e7eb"; e.target.style.boxShadow = "none"; }}
+          <Field label="Sale Date" type="date" value={form.date} onChange={set("date")} required />
+
+          {inventory.length === 0 ? (
+            <div style={{
+              background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+              padding: "10px 12px", marginBottom: 14, fontSize: 13, color: "#9a3412",
+            }}>
+              Belum ada item inventory. Tambahkan item di halaman Input Inventory dulu.
+            </div>
+          ) : (
+            <SelectField
+              label="Product" value={form.inventory_id} onChange={handleInventoryChange}
+              options={inventoryOptions} required
             />
-            {/* TODO C.3: ganti input bebas dengan <select> yang populate dari /api/inventory */}
-          </div>
+          )}
+
+          {selectedItem && (
+            <p style={{ fontSize: 12, color: "#6b7280", marginTop: -10, marginBottom: 14 }}>
+              Stok tersedia: <strong>{selectedItem.quantity}</strong>
+            </p>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Field
               label="Quantity Sold" type="number"
@@ -119,7 +172,7 @@ export default function SalesPage() {
               min="1" step="1" required
             />
           </div>
-          {/* Preview total real-time */}
+
           {form.quantity > 0 && form.unit_price > 0 && (
             <div style={{
               background: "#f0fdf4", border: "1px solid #bbf7d0",
@@ -129,6 +182,7 @@ export default function SalesPage() {
               Total Revenue: <strong>{toRp(Number(form.quantity) * Number(form.unit_price))}</strong>
             </div>
           )}
+
           <Field
             label="Customer Notes (Optional)"
             value={form.customer_notes} onChange={set("customer_notes")}

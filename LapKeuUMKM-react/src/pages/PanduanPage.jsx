@@ -2,26 +2,36 @@ import styles from "../styles.js";
 
 const SECTIONS = [
   {
+    icon: "🧾", title: "Suppliers",
+    steps: [
+      'Buka menu "Suppliers" dari sidebar, atau klik "+ Add Supplier" langsung di halaman Input Pembelian',
+      'Klik tombol "+ Add Supplier"',
+      "Isi: Nama Supplier (wajib), Contact Person, Phone, Address (opsional)",
+      'Klik "Add Supplier" untuk menyimpan',
+    ],
+    tip: "Supplier yang baru ditambahkan dari halaman Input Pembelian akan langsung terpilih otomatis di form pembelian, tanpa perlu pindah halaman.",
+  },
+  {
     icon: "🛒", title: "Input Pembelian (Purchase Input)",
     steps: [
       'Buka menu "Input Pembelian" dari sidebar',
       'Klik tombol "Add Purchase"',
-      "Isi: Tanggal, Nama Supplier, Nama Item, Kuantitas, Harga Satuan",
+      "Isi: Tanggal, pilih Supplier dari dropdown, pilih Item dari dropdown Inventory, Kuantitas, Harga Satuan",
       "Total amount dihitung otomatis oleh sistem",
       'Klik "Add Purchase" untuk menyimpan',
     ],
-    tip: "Semua data pembelian akan tercermin di laporan keuangan dan memengaruhi perhitungan pengeluaran.",
+    tip: "Setiap pembelian otomatis menambah stok item terkait di Inventory. Jika Supplier atau Item belum ada di daftar, tambahkan dulu sebelum mencatat pembelian.",
   },
   {
     icon: "💵", title: "Input Penjualan (Sales Input)",
     steps: [
       'Buka menu "Input Penjualan" dari sidebar',
       'Klik tombol "Add Sale"',
-      "Isi: Tanggal, Nama Produk, Kuantitas Terjual, Harga Satuan",
+      "Isi: Tanggal, pilih Produk dari dropdown Inventory, Kuantitas Terjual, Harga Satuan",
       "Tambahkan catatan pelanggan jika diperlukan",
       'Klik "Add Sale" untuk menyimpan',
     ],
-    tip: "Data penjualan secara otomatis memperbarui total pendapatan dan stok inventory.",
+    tip: "Data penjualan secara otomatis mengurangi stok item terkait di Inventory. Sistem akan menolak penjualan jika stok tidak mencukupi.",
   },
   {
     icon: "💰", title: "Input Kas (Cash Flow Input)",
@@ -41,7 +51,7 @@ const SECTIONS = [
       "Isi: Nama Produk, Kategori, Harga Satuan, Kuantitas Awal",
       'Klik "Add Item" untuk menyimpan',
     ],
-    tip: "Item dengan kuantitas di bawah 10 unit akan memicu Low Stock Alert.",
+    tip: "Item dengan kuantitas di bawah 10 unit akan memicu Low Stock Alert. Item di sini menjadi sumber dropdown untuk halaman Input Pembelian dan Input Penjualan.",
   },
   {
     icon: "📊", title: "Reports",
@@ -52,6 +62,14 @@ const SECTIONS = [
       "Gunakan Export PDF atau Export Excel untuk unduh laporan",
     ],
     tip: "Tombol export menghasilkan laporan berdasarkan rentang tanggal yang dipilih.",
+  },
+  {
+    icon: "📈", title: "Activity Log",
+    steps: [
+      'Buka menu "Activity Log" dari sidebar',
+      "Lihat seluruh riwayat aktivitas: pembelian, penjualan, kas, inventory, dan supplier yang tercatat otomatis oleh sistem",
+    ],
+    tip: "Setiap aksi tambah, ubah, atau hapus data akan otomatis tercatat di sini tanpa perlu input manual.",
   },
 ];
 
@@ -77,8 +95,8 @@ export default function PanduanPage() {
                 mengikuti struktur yang sama dengan template pelaporan keuangan berbasis Excel.
               </p>
               <p style={{ color: "#374151", fontSize: 14, margin: 0 }}>
-                Sistem mencatat pembelian, penjualan, arus kas, dan inventory — komponen kritis
-                manajemen keuangan UMKM.
+                Sistem mencatat supplier, pembelian, penjualan, arus kas, dan inventory — komponen kritis
+                manajemen keuangan UMKM, dengan stok inventory yang saling terhubung antara pembelian dan penjualan.
               </p>
             </div>
           </div>

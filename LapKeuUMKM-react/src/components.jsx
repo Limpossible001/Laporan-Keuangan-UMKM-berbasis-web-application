@@ -61,6 +61,15 @@ export function InventoryIcon({ size = 16, color = "currentColor" }) {
   );
 }
 
+export function SupplierIcon({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <path d="M2 6.5L8 2l6 4.5V13a1 1 0 01-1 1h-3v-4H6v4H3a1 1 0 01-1-1V6.5Z" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M2 7l6-4.5L14 7" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
 export function ReportsIcon({ size = 16, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
@@ -241,6 +250,7 @@ export function SelectField({ label, value, onChange, options, required }) {
 const NAV_ITEMS = [
   { path: "/dashboard",    label: "Dashboard",       icon: DashboardIcon },
   { path: "/purchases",    label: "Input Pembelian", icon: PurchaseIcon  },
+  { path: "/suppliers",    label: "Suppliers",       icon: SupplierIcon  },
   { path: "/sales",        label: "Input Penjualan", icon: SalesIcon     },
   { path: "/cashflow",     label: "Input Kas",       icon: CashIcon      },
   { path: "/inventory",    label: "Input Inventory", icon: InventoryIcon },

@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatCard, Btn, Table, Modal, Field } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp } from "../components.jsx";
 import styles from "../styles.js";
-// import { apiFetch } from "../api.js"; // TODO C.2
+import { apiFetch } from "../api.js";
 
 export default function InventoryPage() {
   const { showNotif } = useNotif();
   const [data, setData]           = useState([]);
+  const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]           = useState({
     product_name: "", category: "", unit_price: "", quantity: "", notes: ""
@@ -15,12 +16,24 @@ export default function InventoryPage() {
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch("/inventory");
+      setData(res);
+    } catch (e) {
+      showNotif(e.message, "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
+
   const handleAdd = async () => {
-    // ── Validasi wajib isi ──────────────────────────────────
     if (!form.product_name || !form.unit_price || !form.quantity) {
       showNotif("Field wajib harus diisi", "error"); return;
     }
-    // ── Validasi nilai > 0 (tidak boleh 0 atau minus) ───────
     if (Number(form.unit_price) <= 0) {
       showNotif("Harga satuan harus lebih dari 0", "error"); return;
     }
@@ -29,32 +42,41 @@ export default function InventoryPage() {
     }
 
     try {
-      // TODO C.2: const res = await apiFetch("/inventory", { method: "POST", body: JSON.stringify(form) });
-      // TODO C.2: setData(d => [res, ...d]);
-      const newItem = {
-        id: Date.now(),
-        ...form,
-        last_updated: new Date().toLocaleDateString("id-ID"),
-        status: Number(form.quantity) > 10 ? "OK" : "Low",
+      const payload = {
+        product_name: form.product_name,
+        category: form.category,
+        unit_price: Number(form.unit_price),
+        quantity: Number(form.quantity),
+        notes: form.notes,
       };
-      setData(d => [newItem, ...d]);
+      const res = await apiFetch("/inventory", { method: "POST", body: JSON.stringify(payload) });
+      setData(d => [res, ...d]);
       setForm({ product_name: "", category: "", unit_price: "", quantity: "", notes: "" });
       setShowModal(false);
       showNotif("Item inventory berhasil ditambahkan");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
   const handleDelete = async (id) => {
     try {
-      // TODO C.2: await apiFetch(`/inventory/${id}`, { method: "DELETE" });
+      await apiFetch(`/inventory/${id}`, { method: "DELETE" });
       setData(d => d.filter(x => x.id !== id));
       showNotif("Item berhasil dihapus");
-    } catch (e) { showNotif(e.message, "error"); }
+    } catch (e) {
+      showNotif(e.message, "error");
+    }
   };
 
-  const lowStock    = data.filter(r => Number(r.quantity) < 10).length;
-  const totalStock  = data.reduce((s, r) => s + Number(r.quantity), 0);
-  const totalValue  = data.reduce((s, r) => s + Number(r.unit_price) * Number(r.quantity), 0);
+  const lowStock   = data.filter(r => Number(r.quantity) < 10).length;
+  const totalStock = data.reduce((s, r) => s + Number(r.quantity), 0);
+  const totalValue = data.reduce((s, r) => s + Number(r.unit_price) * Number(r.quantity), 0);
+
+  const fmtDate = (val) => {
+    if (!val) return "—";
+    try { return new Date(val).toLocaleDateString("id-ID"); } catch { return val; }
+  };
 
   return (
     <div>
@@ -65,7 +87,6 @@ export default function InventoryPage() {
         <StatCard label="LOW STOCK ALERT" value={lowStock}      subtitle="Items below 10 units" accent />
       </div>
 
-      {/* Total nilai inventory */}
       {data.length > 0 && (
         <div style={{
           background: "#eff6ff", border: "1px solid #bfdbfe",
@@ -91,18 +112,21 @@ export default function InventoryPage() {
             { key: "category",     label: "CATEGORY" },
             { key: "unit_price",   label: "UNIT PRICE",   render: r => toRp(r.unit_price) },
             { key: "quantity",     label: "QUANTITY" },
-            { key: "last_updated", label: "LAST UPDATED" },
-            { key: "status",       label: "STATUS", render: r => (
-              <span style={{ color: r.status === "OK" ? "#22c55e" : "#f59e0b", fontWeight: 600 }}>
-                {r.status}
-              </span>
-            )},
+            { key: "last_updated", label: "LAST UPDATED", render: r => fmtDate(r.last_updated) },
+            { key: "status",       label: "STATUS", render: r => {
+              const ok = Number(r.quantity) >= 10;
+              return (
+                <span style={{ color: ok ? "#22c55e" : "#f59e0b", fontWeight: 600 }}>
+                  {ok ? "OK" : "Low"}
+                </span>
+              );
+            }},
             { key: "actions", label: "ACTIONS", render: r => (
               <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
             )},
           ]}
           data={data}
-          emptyMsg='No inventory items yet. Click "Add Inventory Item" to create one.'
+          emptyMsg={loading ? "Memuat data..." : 'No inventory items yet. Click "Add Inventory Item" to create one.'}
         />
       </div>
 
