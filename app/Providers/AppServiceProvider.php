@@ -7,7 +7,11 @@ use App\Models\Sale;
 use App\Models\CashFlow;
 use App\Models\Inventory;
 use App\Models\Supplier;
-use App\Observers\LoggableObserver;
+use App\Observers\PurchaseObserver;
+use App\Observers\SaleObserver;
+use App\Observers\CashFlowObserver;
+use App\Observers\InventoryObserver;
+use App\Observers\SupplierObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -25,29 +29,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Purchase::observe(new LoggableObserver(
-            'Purchase',
-            fn ($m) => "Pembelian {$m->quantity} unit (item #{$m->inventory_id}) dari supplier #{$m->supplier_id} senilai Rp" . number_format($m->total_amount, 0, ',', '.')
-        ));
-
-        Sale::observe(new LoggableObserver(
-            'Sale',
-            fn ($m) => "Penjualan {$m->quantity} unit (item #{$m->inventory_id}) senilai Rp" . number_format($m->total_revenue, 0, ',', '.')
-        ));
-
-        CashFlow::observe(new LoggableObserver(
-            'CashFlow',
-            fn ($m) => ($m->type === 'in' ? 'Kas masuk: ' : 'Kas keluar: ') . $m->description . " (Rp" . number_format($m->amount, 0, ',', '.') . ")"
-        ));
-
-        Inventory::observe(new LoggableObserver(
-            'Inventory',
-            fn ($m) => "Item inventory: {$m->product_name} (stok: {$m->quantity})"
-        ));
-
-        Supplier::observe(new LoggableObserver(
-            'Supplier',
-            fn ($m) => "Supplier: {$m->name}"
-        ));
+        Purchase::observe(PurchaseObserver::class);
+        Sale::observe(SaleObserver::class);
+        CashFlow::observe(CashFlowObserver::class);
+        Inventory::observe(InventoryObserver::class);
+        Supplier::observe(SupplierObserver::class);
     }
 }
