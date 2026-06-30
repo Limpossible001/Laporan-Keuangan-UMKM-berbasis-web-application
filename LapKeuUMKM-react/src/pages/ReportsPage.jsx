@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { StatCard, Btn, Table } from "../components.jsx";
 import { toRp } from "../components.jsx";
+import { apiFetch, apiDownload } from "../api.js";
+import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 
 function ReportRow({ section, children, highlight }) {
@@ -23,33 +25,37 @@ function ReportLine({ label, value, color, bold }) {
   );
 }
 
-function ReportProfitLoss({ dateFrom, dateTo }) {
+function ReportProfitLoss({ dateFrom, dateTo, data }) {
   const label = dateFrom && dateTo ? `${dateFrom} – ${dateTo}` : "Pilih rentang tanggal";
+  const d = data ?? { total_income: 0, cogs: 0, operating_expenses: 0, total_expenses: 0, net_profit: 0, profit_margin: 0 };
   return (
     <div style={styles.card}>
       <h3 style={styles.cardTitle}>Profit & Loss Statement</h3>
       <p style={{ ...styles.cardSub, marginBottom: 20 }}>{label}</p>
       <ReportRow section="INCOME">
-        <ReportLine label="Total Income"   value="Rp 0" color="#22c55e" />
+        <ReportLine label="Total Income" value={toRp(d.total_income)} color="#22c55e" />
       </ReportRow>
       <ReportRow section="EXPENSES">
-        <ReportLine label="Total Expenses" value="Rp 0" color="#ef4444" />
+        <ReportLine label="HPP (Pembelian)"   value={toRp(d.cogs)} color="#ef4444" />
+        <ReportLine label="Biaya Operasional" value={toRp(d.operating_expenses)} color="#ef4444" />
+        <ReportLine label="Total Expenses"    value={toRp(d.total_expenses)} color="#ef4444" bold />
       </ReportRow>
       <ReportRow section="NET PROFIT / LOSS" highlight>
-        <ReportLine label="Net Profit / Loss" value="Rp 0" color="#22c55e" bold />
-        <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Profit Margin: 0%</p>
+        <ReportLine label="Net Profit / Loss" value={toRp(d.net_profit)} color={d.net_profit >= 0 ? "#22c55e" : "#ef4444"} bold />
+        <p style={{ fontSize: 13, color: "#9ca3af", margin: 0 }}>Profit Margin: {d.profit_margin}%</p>
       </ReportRow>
     </div>
   );
 }
 
-function ReportCashFlow() {
+function ReportCashFlow({ data }) {
+  const d = data ?? { inflow: 0, outflow: 0, net: 0, count: 0, details: [] };
   return (
     <div>
       <div style={styles.statsRow}>
-        <StatCard label="Cash Inflow"  value="Rp 0" subtitle="0 transactions" />
-        <StatCard label="Cash Outflow" value="Rp 0" subtitle="0 transactions" />
-        <StatCard label="Net Cash Flow" value="Rp 0" subtitle="0 total transactions" accent />
+        <StatCard label="Cash Inflow"   value={toRp(d.inflow)}  subtitle={`${d.count} transactions`} />
+        <StatCard label="Cash Outflow"  value={toRp(d.outflow)} subtitle={`${d.count} transactions`} />
+        <StatCard label="Net Cash Flow" value={toRp(d.net)}     subtitle={`${d.count} total transactions`} accent />
       </div>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>Cash Flow Details</h3>
@@ -58,46 +64,105 @@ function ReportCashFlow() {
             { key: "date",        label: "DATE" },
             { key: "description", label: "DESCRIPTION" },
             { key: "category",    label: "CATEGORY" },
-            { key: "inflow",      label: "INFLOW" },
-            { key: "outflow",     label: "OUTFLOW" },
+            { key: "inflow",      label: "INFLOW",  render: r => r.inflow  ? toRp(r.inflow)  : "—" },
+            { key: "outflow",     label: "OUTFLOW", render: r => r.outflow ? toRp(r.outflow) : "—" },
           ]}
-          data={[]}
+          data={d.details}
         />
       </div>
     </div>
   );
 }
 
-function ReportCategory() {
+function ReportCategory({ data }) {
+  const income  = data?.income  ?? {};
+  const expense = data?.expense ?? {};
+  const incomeRows  = Object.entries(income);
+  const expenseRows = Object.entries(expense);
+
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>Income by Category</h3>
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No income data</div>
+        {incomeRows.length === 0 ? (
+          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No income data</div>
+        ) : (
+          incomeRows.map(([cat, amount]) => (
+            <ReportLine key={cat} label={cat} value={toRp(amount)} color="#22c55e" />
+          ))
+        )}
       </div>
       <div style={styles.card}>
         <h3 style={styles.cardTitle}>Expenses by Category</h3>
-        <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No expense data</div>
-      </div>
-      <div style={{ ...styles.card, gridColumn: "1 / -1" }}>
-        <h3 style={styles.cardTitle}>Category Comparison</h3>
-        <div style={{ height: 200, background: "#f9fafb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 13 }}>
-          Bar chart — Tahap E
-        </div>
+        {expenseRows.length === 0 ? (
+          <div style={{ padding: "40px 0", textAlign: "center", color: "#9ca3af", fontSize: 13 }}>No expense data</div>
+        ) : (
+          expenseRows.map(([cat, amount]) => (
+            <ReportLine key={cat} label={cat} value={toRp(amount)} color="#ef4444" />
+          ))
+        )}
       </div>
     </div>
   );
 }
 
 export default function ReportsPage() {
+  const { showNotif } = useNotif();
   const [activeTab, setActiveTab] = useState("profit");
   const [dateFrom, setDateFrom]   = useState("");
   const [dateTo,   setDateTo]     = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const [profitData, setProfitData]     = useState(null);
+  const [cashflowData, setCashflowData] = useState(null);
+  const [categoryData, setCategoryData] = useState(null);
 
   const TAB_LABELS = {
     profit:   "Profit & Loss",
     cashflow: "Cash Flow",
     category: "Category Analysis",
+  };
+
+  const qs = useCallback(() => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.append("from", dateFrom);
+    if (dateTo)   params.append("to", dateTo);
+    return params.toString() ? `?${params.toString()}` : "";
+  }, [dateFrom, dateTo]);
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    try {
+      const query = qs();
+      const [profit, cashflow, category] = await Promise.all([
+        apiFetch(`/reports/profit-loss${query}`),
+        apiFetch(`/reports/cash-flow${query}`),
+        apiFetch(`/reports/category${query}`),
+      ]);
+      setProfitData(profit);
+      setCashflowData(cashflow);
+      setCategoryData(category);
+    } catch (e) {
+      showNotif(e.message ?? "Gagal memuat laporan", "error");
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qs]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  const handleExport = async (type) => {
+    setExporting(true);
+    try {
+      await apiDownload(`/reports/export/${type}${qs()}`);
+      showNotif(`Export ${type.toUpperCase()} berhasil diunduh`);
+    } catch (e) {
+      showNotif(e.message ?? `Gagal export ${type}`, "error");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -115,9 +180,12 @@ export default function ReportsPage() {
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={styles.input} />
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", paddingTop: 18 }}>
-            {/* TODO F.4: ganti alert dengan trigger download dari backend */}
-            <Btn variant="outline" size="sm" onClick={() => alert("Export PDF — Tahap F")}>📄 Export PDF</Btn>
-            <Btn variant="outline" size="sm" onClick={() => alert("Export Excel — Tahap F")}>📊 Export Excel</Btn>
+            <Btn variant="outline" size="sm" onClick={() => handleExport("pdf")} disabled={exporting}>
+              📄 Export PDF
+            </Btn>
+            <Btn variant="outline" size="sm" onClick={() => handleExport("excel")} disabled={exporting}>
+              📊 Export Excel
+            </Btn>
           </div>
         </div>
       </div>
@@ -131,9 +199,15 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {activeTab === "profit"   && <ReportProfitLoss dateFrom={dateFrom} dateTo={dateTo} />}
-      {activeTab === "cashflow" && <ReportCashFlow />}
-      {activeTab === "category" && <ReportCategory />}
+      {loading ? (
+        <p style={{ color: "#9ca3af", fontSize: 14 }}>Memuat laporan…</p>
+      ) : (
+        <>
+          {activeTab === "profit"   && <ReportProfitLoss dateFrom={dateFrom} dateTo={dateTo} data={profitData} />}
+          {activeTab === "cashflow" && <ReportCashFlow data={cashflowData} />}
+          {activeTab === "category" && <ReportCategory data={categoryData} />}
+        </>
+      )}
     </div>
   );
 }

@@ -40,6 +40,9 @@ export default function InventoryPage() {
     if (Number(form.quantity) <= 0) {
       showNotif("Kuantitas awal harus lebih dari 0", "error"); return;
     }
+    if (!window.confirm("Silahkan cek kembali data anda, apakah sudah yakin?")) {
+      return;
+    }
 
     try {
       const payload = {
@@ -60,6 +63,10 @@ export default function InventoryPage() {
   };
 
   const handleDelete = async (id) => {
+    if (!window.confirm("Apakah anda yakin untuk menghapus ini?")) {
+      return;
+    }
+    
     try {
       await apiFetch(`/inventory/${id}`, { method: "DELETE" });
       setData(d => d.filter(x => x.id !== id));
