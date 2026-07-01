@@ -24,12 +24,16 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Note 3: Faker bahasa Indonesia untuk data seeder yang lebih realistis
+        $fakerID = \Faker\Factory::create('id_ID');
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'name'             => $fakerID->name(),
+            'business_name'    => $fakerID->company(),          // kolom baru dari migration sesi lalu
+            'email'            => fake()->unique()->safeEmail(), // email tetap en_US biar format valid
+            'email_verified_at'=> now(),
+            'password'         => static::$password ??= Hash::make('password'),
+            'remember_token'   => Str::random(10),
         ];
     }
 

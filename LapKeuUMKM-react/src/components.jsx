@@ -8,6 +8,11 @@ import { useAuth } from "./contexts.jsx";
 export const toRp = (val) =>
   "Rp " + Number(val ?? 0).toLocaleString("id-ID", { minimumFractionDigits: 0 });
 
+// Note 4: Quantity ditampilkan sebagai bilangan bulat (tanpa .00)
+// Contoh: 100.00 → "100", 1500 → "1.500" (separator ribuan id-ID)
+export const toQty = (val) =>
+  Math.round(Number(val ?? 0)).toLocaleString("id-ID");
+
 // ===========================================================
 // SVG ICONS
 // =========================================================
@@ -210,6 +215,103 @@ export function Modal({ title, onClose, children }) {
   );
 }
 
+// Note 2: PhoneField — dropdown kode negara + input digit
+// Cara pakai:
+//   <PhoneField label="Phone" value={form.phone} onChange={(fullPhone) => setForm(f => ({...f, phone: fullPhone}))} required />
+// `value` dan callback mengembalikan string E.164 lengkap, mis. "+6281234567890"
+
+const COUNTRY_CODES = [
+  { code: "+62",  flag: "🇮🇩", label: "ID (+62)"  },
+  { code: "+1",   flag: "🇺🇸", label: "US (+1)"   },
+  { code: "+44",  flag: "🇬🇧", label: "UK (+44)"  },
+  { code: "+65",  flag: "🇸🇬", label: "SG (+65)"  },
+  { code: "+60",  flag: "🇲🇾", label: "MY (+60)"  },
+  { code: "+61",  flag: "🇦🇺", label: "AU (+61)"  },
+  { code: "+81",  flag: "🇯🇵", label: "JP (+81)"  },
+  { code: "+82",  flag: "🇰🇷", label: "KR (+82)"  },
+  { code: "+86",  flag: "🇨🇳", label: "CN (+86)"  },
+  { code: "+91",  flag: "🇮🇳", label: "IN (+91)"  },
+  { code: "+971", flag: "🇦🇪", label: "AE (+971)" },
+  { code: "+966", flag: "🇸🇦", label: "SA (+966)" },
+];
+
+// Pisahkan string E.164 (mis. "+6281234567") jadi [kodeNegara, nomorLokal]
+function splitPhone(fullPhone) {
+  if (!fullPhone) return { countryCode: "+62", localNumber: "" };
+  const match = COUNTRY_CODES.find(c => fullPhone.startsWith(c.code));
+  if (match) return { countryCode: match.code, localNumber: fullPhone.slice(match.code.length) };
+  return { countryCode: "+62", localNumber: fullPhone.replace(/^\+?/, "") };
+}
+
+export function PhoneField({ label, value, onChange, required }) {
+  const { countryCode, localNumber } = splitPhone(value);
+
+  const handleCode = (e) => {
+    const newCode = e.target.value;
+    onChange(newCode + localNumber);
+  };
+
+  const handleNumber = (e) => {
+    // Hanya izinkan digit (0-9)
+    const digits = e.target.value.replace(/\D/g, "");
+    onChange(countryCode + digits);
+  };
+
+  const selectStyle = {
+    height: 40,
+    border: "1.5px solid #e5e7eb",
+    borderRadius: "8px 0 0 8px",
+    borderRight: "none",
+    padding: "0 8px",
+    fontSize: 13,
+    color: "#374151",
+    background: "#f9fafb",
+    cursor: "pointer",
+    outline: "none",
+  };
+
+  const inputStyle = {
+    flex: 1,
+    height: 40,
+    border: "1.5px solid #e5e7eb",
+    borderRadius: "0 8px 8px 0",
+    padding: "0 12px",
+    fontSize: 14,
+    color: "#111827",
+    background: "#fff",
+    outline: "none",
+  };
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={styles.fieldLabel}>
+        {label}
+        {required && <span style={{ color: "#ef4444", marginLeft: 3 }}>*</span>}
+      </label>
+      <div style={{ display: "flex" }}>
+        <select value={countryCode} onChange={handleCode} style={selectStyle}>
+          {COUNTRY_CODES.map(c => (
+            <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
+          ))}
+        </select>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={localNumber}
+          onChange={handleNumber}
+          placeholder="81234567890"
+          style={inputStyle}
+        />
+      </div>
+      {localNumber && (
+        <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 3, marginBottom: 0 }}>
+          Nomor lengkap: {countryCode}{localNumber}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function Field({ label, type = "text", value, onChange, placeholder, required }) {
   return (
     <div style={{ marginBottom: 14 }}>
@@ -310,11 +412,17 @@ export function SidebarLayout({ children, currentPath, navigate }) {
         {/* Topbar */}
         <header style={styles.topbar}>
           <div style={{ flex: 1 }} />
-          <div style={styles.userBadge}>
-            <div style={styles.userAvatar}>
-              <UserIcon size={16} color="#4F46E5" />
+          <button
+            onClick={() => navigate("/profile")}
+            title="Profile Settings"
+            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+          >
+            <div style={styles.userBadge}>
+              <div style={styles.userAvatar}>
+                <UserIcon size={16} color="#4F46E5" />
+              </div>
             </div>
-          </div>
+          </button>
         </header>
 
         {/* Page content */}

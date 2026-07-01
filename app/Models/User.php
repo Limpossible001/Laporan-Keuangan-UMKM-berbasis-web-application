@@ -21,10 +21,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'business_name',
+        'avatar_path',
         'email',
         'password',
-        'business_name',
-        'profile_picture',
     ];
 
     /**
@@ -38,7 +38,12 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Atribut tambahan (accessor) yang ikut disertakan saat User di-serialize ke JSON.
+     */
+    protected $appends = ['avatar_url'];
+
+    /**
+     * The attributes that should be cast.
      *
      * @return array<string, string>
      */
@@ -46,7 +51,18 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'password' => 'hashed',
         ];
+    }
+
+    /**
+     * URL publik avatar (null kalau belum upload foto).
+     * Note 7: dipakai FE untuk render <img> di Profile Page.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar_path
+            ? asset('storage/' . $this->avatar_path)
+            : null;
     }
 }

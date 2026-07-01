@@ -10,14 +10,14 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('business_name')->nullable()->after('name');
-            $table->string('profile_picture')->nullable()->after('business_name');
+            $table->string('avatar_path')->nullable()->after('business_name');
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['business_name', 'profile_picture']);
+            $table->dropColumn(['business_name', 'avatar_path']);
         });
     }
 };

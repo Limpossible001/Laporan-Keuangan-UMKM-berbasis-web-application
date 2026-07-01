@@ -3,7 +3,7 @@ import { useAuth } from "../contexts.jsx";
 import { useNotif } from "../contexts.jsx";
 import { LogoIcon, Btn, Field } from "../components.jsx";
 import styles from "../styles.js";
-// import { apiFetch } from "../api.js"; // TODO B.4
+import { apiFetch } from "../api.js"; // B.4: Sanctum aktif
 
 const ROUTES = { DASHBOARD: "/dashboard", REGISTER: "/register" };
 
@@ -18,32 +18,33 @@ export default function LoginPage({ navigate }) {
     if (!email || !password) { showNotif("Email dan password wajib diisi", "error"); return; }
     setLoading(true);
     try {
-      // TODO B.4: uncomment baris di bawah dan hapus simulasi
-      // const data = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
-      // login(data.user, data.token);
-      await new Promise(r => setTimeout(r, 400));
-      login({ name: "User UMKM", email }, "local");
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      login(data.user, data.token);
       showNotif("Login berhasil!");
       navigate(ROUTES.DASHBOARD);
     } catch (e) {
-      showNotif(e.message, "error");
+      showNotif(e.message ?? "Email atau password salah", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  // Demo Account: coba login ke akun demo asli (lihat README — seeder TestSeeder),
+  // kalau gagal (belum di-seed), fallback ke mock biar tombol tidak macet.
   const handleDemo = async () => {
     setLoading(true);
     try {
-      // TODO B.4: uncomment baris di bawah dan hapus simulasi
-      // const data = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email: "test@example.com", password: "password" }) });
-      // login(data.user, data.token);
-      await new Promise(r => setTimeout(r, 300));
-      login({ name: "Demo User", email: "demo@umkm.id" }, "local");
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email: "demo@umkm.id", password: "password" }),
+      });
+      login(data.user, data.token);
       navigate(ROUTES.DASHBOARD);
     } catch {
-      login({ name: "Demo User", email: "demo@umkm.id" }, "local");
-      navigate(ROUTES.DASHBOARD);
+      showNotif("Akun demo belum ada di database — jalankan seeder dulu (lihat README)", "error");
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, PhoneField } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
@@ -10,11 +10,15 @@ export default function SuppliersPage() {
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm]           = useState({
-    name: "", contact_person: "", phone: "", address: "", notes: ""
-  });
+
+  // Note 1: semua field wajib (name, contact_person, phone, address)
+  // notes tetap opsional
+  const EMPTY_FORM = { name: "", contact_person: "", phone: "", address: "", notes: "" };
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  // Khusus PhoneField — callback-nya langsung string E.164, bukan event
+  const setPhone = (fullPhone) => setForm(f => ({ ...f, phone: fullPhone }));
 
   const loadData = async () => {
     setLoading(true);
@@ -30,28 +34,33 @@ export default function SuppliersPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const resetForm = () => {
-    setForm({ name: "", contact_person: "", phone: "", address: "", notes: "" });
-    setEditingId(null);
-  };
+  const resetForm = () => { setForm(EMPTY_FORM); setEditingId(null); };
 
-  const openAdd = () => { resetForm(); setShowModal(true); };
-
+  const openAdd  = () => { resetForm(); setShowModal(true); };
   const openEdit = (supplier) => {
     setForm({
-      name: supplier.name ?? "",
+      name:           supplier.name           ?? "",
       contact_person: supplier.contact_person ?? "",
-      phone: supplier.phone ?? "",
-      address: supplier.address ?? "",
-      notes: supplier.notes ?? "",
+      phone:          supplier.phone          ?? "",
+      address:        supplier.address        ?? "",
+      notes:          supplier.notes          ?? "",
     });
     setEditingId(supplier.id);
     setShowModal(true);
   };
 
   const handleSave = async () => {
-    if (!form.name) {
-      showNotif("Nama supplier wajib diisi", "error"); return;
+    // Note 1: validasi SEMUA field wajib di FE
+    if (!form.name)           { showNotif("Nama supplier wajib diisi", "error");         return; }
+    if (!form.contact_person) { showNotif("Contact person wajib diisi", "error");        return; }
+    if (!form.phone)          { showNotif("Nomor telepon wajib diisi", "error");          return; }
+    if (!form.address)        { showNotif("Alamat wajib diisi", "error");                 return; }
+
+    // Note 2: validasi format E.164 dasar di FE sebelum dikirim ke BE
+    const phoneRegex = /^\+[1-9]\d{7,14}$/;
+    if (!phoneRegex.test(form.phone)) {
+      showNotif("Format telepon tidak valid. Pastikan kode negara + nomor sudah benar.", "error");
+      return;
     }
 
     try {
@@ -104,48 +113,57 @@ export default function SuppliersPage() {
         </div>
         <Table
           columns={[
-            { key: "name",            label: "NAME" },
-            { key: "contact_person",  label: "CONTACT PERSON" },
-            { key: "phone",           label: "PHONE" },
-            { key: "address",         label: "ADDRESS" },
+            { key: "name",           label: "NAME"           },
+            { key: "contact_person", label: "CONTACT PERSON" },
+            { key: "phone",          label: "PHONE"          },
+            { key: "address",        label: "ADDRESS"        },
             { key: "actions", label: "ACTIONS", render: r => (
               <div style={{ display: "flex", gap: 6 }}>
                 <Btn variant="outline" size="sm" onClick={() => openEdit(r)}>Edit</Btn>
-                <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
+                <Btn variant="danger"  size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
               </div>
             )},
           ]}
           data={data}
-          emptyMsg={loading ? "Memuat data..." : 'No suppliers yet. Click "Add Supplier" to create one.'}
+          emptyMsg={loading ? "Memuat data..." : 'Belum ada supplier. Klik "Add Supplier" untuk menambahkan.'}
         />
       </div>
 
       {showModal && (
-        <Modal title={editingId ? "Edit Supplier" : "Add Supplier"} onClose={() => { setShowModal(false); resetForm(); }}>
+        <Modal
+          title={editingId ? "Edit Supplier" : "Add Supplier"}
+          onClose={() => { setShowModal(false); resetForm(); }}
+        >
+          {/* Note 1: semua 4 field utama MANDATORY (required) */}
           <Field
             label="Supplier Name"
             value={form.name} onChange={set("name")}
-            placeholder="Enter supplier name" required
+            placeholder="Nama perusahaan/toko supplier"
+            required
           />
           <Field
             label="Contact Person"
             value={form.contact_person} onChange={set("contact_person")}
-            placeholder="Optional"
+            placeholder="Nama penanggung jawab"
+            required
           />
-          <Field
+          {/* Note 2: PhoneField dengan dropdown kode negara */}
+          <PhoneField
             label="Phone"
-            value={form.phone} onChange={set("phone")}
-            placeholder="Optional"
+            value={form.phone}
+            onChange={setPhone}
+            required
           />
           <Field
             label="Address"
             value={form.address} onChange={set("address")}
-            placeholder="Optional"
+            placeholder="Alamat lengkap supplier"
+            required
           />
           <Field
-            label="Notes"
+            label="Notes (Opsional)"
             value={form.notes} onChange={set("notes")}
-            placeholder="Optional"
+            placeholder="Catatan tambahan"
           />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => { setShowModal(false); resetForm(); }}>Cancel</Btn>

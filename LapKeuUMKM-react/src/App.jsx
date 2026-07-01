@@ -12,6 +12,7 @@ import SuppliersPage    from "./pages/SuppliersPage.jsx";
 import ReportsPage      from "./pages/ReportsPage.jsx";
 import ActivityLogPage  from "./pages/ActivityLogPage.jsx";
 import PanduanPage      from "./pages/PanduanPage.jsx";
+import ProfilePage      from "./pages/ProfilePage.jsx";
 import LoginPage        from "./pages/LoginPage.jsx";
 import RegisterPage     from "./pages/RegisterPage.jsx";
 
@@ -28,6 +29,7 @@ const ROUTES = {
   REPORTS:      "/reports",
   ACTIVITY_LOG: "/activity-log",
   PANDUAN:      "/panduan",
+  PROFILE:      "/profile",
 };
 
 // ── Hash-based router ────────────────────────────────────────
@@ -60,6 +62,7 @@ function renderPage(path, navigate) {
     case ROUTES.REPORTS:      return <ReportsPage />;
     case ROUTES.ACTIVITY_LOG: return <ActivityLogPage />;
     case ROUTES.PANDUAN:      return <PanduanPage />;
+    case ROUTES.PROFILE:      return <ProfilePage />;
     default: return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
         <p style={{ fontSize: 48 }}>🔍</p>

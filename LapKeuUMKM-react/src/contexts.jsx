@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from "react";
+import { apiFetch } from "./api.js";
 
 // ===========================================================
 // AUTH CONTEXT
@@ -27,7 +28,14 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    // TODO B.2: await apiFetch("/auth/logout", { method: "POST" });
+    try {
+      // Hanya panggil API kalau token-nya bukan token mock lama ("local")
+      if (localStorage.getItem("umkm_token") && localStorage.getItem("umkm_token") !== "local") {
+        await apiFetch("/auth/logout", { method: "POST" });
+      }
+    } catch {
+      // Token sudah invalid/expired di server — tidak masalah, lanjut hapus lokal saja
+    }
     setUser(null);
     localStorage.removeItem("umkm_user");
     localStorage.removeItem("umkm_token");
