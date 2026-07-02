@@ -3,7 +3,7 @@ import { useAuth } from "../contexts.jsx";
 import { useNotif } from "../contexts.jsx";
 import { LogoIcon, Btn, Field } from "../components.jsx";
 import styles from "../styles.js";
-// import { apiFetch } from "../api.js"; // TODO B.4
+import { apiFetch } from "../api.js"; // B.4: Sanctum aktif
 
 const ROUTES = { DASHBOARD: "/dashboard", LOGIN: "/login" };
 
@@ -18,18 +18,23 @@ export default function RegisterPage({ navigate }) {
   const handleSubmit = async () => {
     if (!form.name || !form.email || !form.password) { showNotif("Semua field wajib diisi", "error"); return; }
     if (form.password !== form.confirm) { showNotif("Password tidak cocok", "error"); return; }
-    if (form.password.length < 6) { showNotif("Password minimal 6 karakter", "error"); return; }
+    if (form.password.length < 8) { showNotif("Password minimal 8 karakter", "error"); return; }
     setLoading(true);
     try {
-      // TODO B.4: uncomment baris di bawah dan hapus simulasi
-      // const data = await apiFetch("/auth/register", { method: "POST", body: JSON.stringify({ name: form.name, email: form.email, password: form.password, password_confirmation: form.confirm }) });
-      // login(data.user, data.token);
-      await new Promise(r => setTimeout(r, 400));
-      login({ name: form.name, email: form.email }, "local");
+      const data = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          password_confirmation: form.confirm,
+        }),
+      });
+      login(data.user, data.token);
       showNotif("Akun berhasil dibuat!");
       navigate(ROUTES.DASHBOARD);
     } catch (e) {
-      showNotif(e.message, "error");
+      showNotif(e.message ?? "Gagal membuat akun", "error");
     } finally {
       setLoading(false);
     }
@@ -49,7 +54,7 @@ export default function RegisterPage({ navigate }) {
 
         <Field label="Full Name"            value={form.name}     onChange={set("name")}     placeholder="John Doe"              required />
         <Field label="Email Address" type="email" value={form.email} onChange={set("email")} placeholder="your.email@example.com" required />
-        <Field label="Password"      type="password" value={form.password} onChange={set("password")} placeholder="At least 6 characters" required />
+        <Field label="Password"      type="password" value={form.password} onChange={set("password")} placeholder="At least 8 characters" required />
         <Field label="Confirm Password" type="password" value={form.confirm} onChange={set("confirm")} placeholder="Repeat your password" required />
 
         <Btn onClick={handleSubmit} disabled={loading}>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, SelectField, PhoneField } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
-import { toRp } from "../components.jsx";
+import { toRp, toQty } from "../components.jsx"; // Note 4
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
@@ -93,8 +93,14 @@ export default function PurchasesPage() {
 
   // ── Submit modal cepat "+Add Supplier" ───────────────────
   const handleAddSupplier = async () => {
-    if (!supplierForm.name) {
-      showNotif("Nama supplier wajib diisi", "error"); return;
+    // Note 1: semua 4 field wajib, konsisten dengan SuppliersPage
+    if (!supplierForm.name)           { showNotif("Nama supplier wajib diisi", "error");   return; }
+    if (!supplierForm.contact_person) { showNotif("Contact person wajib diisi", "error");  return; }
+    if (!supplierForm.phone)          { showNotif("Nomor telepon wajib diisi", "error");    return; }
+    if (!supplierForm.address)        { showNotif("Alamat wajib diisi", "error");            return; }
+    const phoneRegex = /^\+[1-9]\d{7,14}$/;
+    if (!phoneRegex.test(supplierForm.phone)) {
+      showNotif("Format telepon tidak valid (kode negara + digit)", "error"); return;
     }
     try {
       const res = await apiFetch("/suppliers", { method: "POST", body: JSON.stringify(supplierForm) });
@@ -113,7 +119,8 @@ export default function PurchasesPage() {
   const avgPurchase = data.length ? totalAmount / data.length : 0;
 
   const supplierOptions  = suppliers.map(s => ({ value: String(s.id), label: s.name }));
-  const inventoryOptions = inventory.map(i => ({ value: String(i.id), label: `${i.product_name} (stok: ${i.quantity})` }));
+  // Note 4: toQty → stok tanpa desimal di dropdown label
+  const inventoryOptions = inventory.map(i => ({ value: String(i.id), label: `${i.product_name} (stok: ${toQty(i.quantity)})` }));
 
   return (
     <div>
@@ -140,7 +147,7 @@ export default function PurchasesPage() {
             { key: "date",          label: "DATE" },
             { key: "supplier",      label: "SUPPLIER", render: r => r.supplier?.name ?? "—" },
             { key: "inventory",     label: "ITEM",      render: r => r.inventory?.product_name ?? "—" },
-            { key: "quantity",      label: "QTY" },
+            { key: "quantity",      label: "QTY", render: r => toQty(r.quantity) },
             { key: "unit_price",    label: "UNIT PRICE",  render: r => toRp(r.unit_price) },
             { key: "total_amount",  label: "TOTAL",       render: r => toRp(r.total_amount) },
             { key: "actions", label: "ACTIONS", render: r => (
@@ -218,17 +225,20 @@ export default function PurchasesPage() {
           <Field
             label="Contact Person"
             value={supplierForm.contact_person} onChange={setSupplier("contact_person")}
-            placeholder="Optional"
+            placeholder="Nama penanggung jawab"
+            required
           />
-          <Field
+          <PhoneField
             label="Phone"
-            value={supplierForm.phone} onChange={setSupplier("phone")}
-            placeholder="Optional"
+            value={supplierForm.phone}
+            onChange={(fullPhone) => setSupplierForm(f => ({ ...f, phone: fullPhone }))}
+            required
           />
           <Field
             label="Address"
             value={supplierForm.address} onChange={setSupplier("address")}
-            placeholder="Optional"
+            placeholder="Alamat lengkap supplier"
+            required
           />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => setShowSupplierModal(false)}>Cancel</Btn>

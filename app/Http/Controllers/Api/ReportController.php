@@ -75,7 +75,7 @@ class ReportController extends Controller
                 'category'    => $r->category,
                 'inflow'      => $r->type === 'in' ? (float) $r->amount : 0,
                 'outflow'     => $r->type === 'out' ? (float) $r->amount : 0,
-            ])->values(),
+            ])->values()->toArray(),
         ];
     }
 

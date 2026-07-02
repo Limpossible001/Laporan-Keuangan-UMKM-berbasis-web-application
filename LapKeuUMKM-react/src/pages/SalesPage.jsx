@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
-import { toRp } from "../components.jsx";
+import { toRp, toQty } from "../components.jsx"; // Note 4
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
@@ -60,7 +60,7 @@ export default function SalesPage() {
     }
     // Validasi stok di sisi FE dulu untuk feedback cepat (BE tetap validasi ulang)
     if (selectedItem && Number(form.quantity) > Number(selectedItem.quantity)) {
-      showNotif(`Stok tidak mencukupi. Stok tersedia: ${selectedItem.quantity}`, "error"); return;
+      showNotif(`Stok tidak mencukupi. Stok tersedia: ${toQty(selectedItem.quantity)} unit`, "error"); return;
     }
 
     try {
@@ -100,7 +100,8 @@ export default function SalesPage() {
   const totalRevenue = data.reduce((s, r) => s + Number(r.total_revenue), 0);
   const totalItems   = data.reduce((s, r) => s + Number(r.quantity), 0);
 
-  const inventoryOptions = inventory.map(i => ({ value: String(i.id), label: `${i.product_name} (stok: ${i.quantity})` }));
+  // Note 4: toQty → stok tanpa desimal di dropdown label
+  const inventoryOptions = inventory.map(i => ({ value: String(i.id), label: `${i.product_name} (stok: ${toQty(i.quantity)})` }));
 
   return (
     <div>
@@ -123,7 +124,7 @@ export default function SalesPage() {
           columns={[
             { key: "date",           label: "DATE" },
             { key: "inventory",      label: "PRODUCT",       render: r => r.inventory?.product_name ?? "—" },
-            { key: "quantity",       label: "QTY" },
+            { key: "quantity",       label: "QTY", render: r => toQty(r.quantity) },
             { key: "unit_price",     label: "UNIT PRICE",    render: r => toRp(r.unit_price) },
             { key: "total_revenue",  label: "TOTAL REVENUE", render: r => toRp(r.total_revenue) },
             { key: "customer_notes", label: "NOTES" },
@@ -156,7 +157,7 @@ export default function SalesPage() {
 
           {selectedItem && (
             <p style={{ fontSize: 12, color: "#6b7280", marginTop: -10, marginBottom: 14 }}>
-              Stok tersedia: <strong>{selectedItem.quantity}</strong>
+              Stok tersedia: <strong>{toQty(selectedItem.quantity)} unit</strong>
             </p>
           )}
 
