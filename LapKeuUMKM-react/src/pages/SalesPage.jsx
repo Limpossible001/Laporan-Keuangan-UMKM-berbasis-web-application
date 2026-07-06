@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp, toQty } from "../components.jsx"; // Note 4
 import styles from "../styles.js";
