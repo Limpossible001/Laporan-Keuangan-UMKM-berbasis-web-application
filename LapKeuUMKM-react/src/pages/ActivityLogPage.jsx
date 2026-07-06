@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Table } from "../components.jsx";
+import { StatCard, Table, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
@@ -8,6 +8,7 @@ export default function ActivityLogPage() {
   const { showNotif } = useNotif();
   const [logs, setLogs]       = useState([]);
   const [loading, setLoading] = useState(true);
+  const { paginated, page, setPage, totalPages } = usePagination(logs, 10);
 
   const loadData = async () => {
     setLoading(true);
@@ -66,9 +67,10 @@ export default function ActivityLogPage() {
             { key: "module",      label: "MODULE" },
             { key: "description", label: "DESCRIPTION" },
           ]}
-          data={logs}
+          data={paginated}
           emptyMsg={loading ? "Memuat data..." : "No activity logs yet. System actions will be recorded here."}
         />
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </div>
   );

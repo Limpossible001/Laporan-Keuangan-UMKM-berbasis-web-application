@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp, toQty } from "../components.jsx"; // Note 4
 import styles from "../styles.js";
@@ -8,6 +8,7 @@ import { apiFetch } from "../api.js";
 export default function SalesPage() {
   const { showNotif } = useNotif();
   const [data, setData]           = useState([]);
+  const { paginated, page, setPage, totalPages } = usePagination(data, 10);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -132,9 +133,10 @@ export default function SalesPage() {
               <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
             )},
           ]}
-          data={data}
+          data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No sales records yet. Click "Add Sale" to create one.'}
         />
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage}/>
       </div>
 
       {showModal && (

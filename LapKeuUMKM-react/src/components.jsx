@@ -1,3 +1,4 @@
+import { useState } from "react";
 import styles from "./styles.js";
 import { useAuth } from "./contexts.jsx";
 
@@ -341,6 +342,55 @@ export function SelectField({ label, value, onChange, options, required }) {
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
+    </div>
+  );
+}
+
+// =========================================================
+// PAGINATION (Input 5)
+// =========================================================
+
+/**
+ * Hook FE-only pagination — slice data yang sudah di-fetch.
+ */
+export function usePagination(data, pageSize = 10) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil((data?.length ?? 0) / pageSize));
+  const safePage   = Math.min(page, totalPages);
+  const paginated  = (data ?? []).slice((safePage - 1) * pageSize, safePage * pageSize);
+  return { paginated, page: safePage, setPage, totalPages, total: data?.length ?? 0 };
+}
+
+export function PaginationBar({ page, totalPages, onPageChange }) {
+  if (!totalPages || totalPages <= 1) return null;
+
+  const delta = 2;
+  const range = [];
+  for (let i = Math.max(1, page - delta); i <= Math.min(totalPages, page + delta); i++) {
+    range.push(i);
+  }
+
+  const base    = { minWidth:32, height:32, border:"1.5px solid #e5e7eb", borderRadius:6, background:"#fff",
+    cursor:"pointer", fontSize:13, color:"#374151", display:"inline-flex", alignItems:"center", justifyContent:"center" };
+  const active  = { ...base, background:"#4F46E5", color:"#fff", borderColor:"#4F46E5", fontWeight:700 };
+  const disabled= { ...base, opacity:.4, cursor:"not-allowed" };
+
+  return (
+    <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", gap:4, marginTop:12 }}>
+      <button style={page<=1?disabled:base} disabled={page<=1} onClick={()=>onPageChange(page-1)}>‹</button>
+      {range[0]>1 && <>
+        <button style={base} onClick={()=>onPageChange(1)}>1</button>
+        {range[0]>2 && <span style={{padding:"0 4px",color:"#9ca3af"}}>…</span>}
+      </>}
+      {range.map(n=>(
+        <button key={n} style={n===page?active:base} onClick={()=>onPageChange(n)}>{n}</button>
+      ))}
+      {range[range.length-1]<totalPages && <>
+        {range[range.length-1]<totalPages-1 && <span style={{padding:"0 4px",color:"#9ca3af"}}>…</span>}
+        <button style={base} onClick={()=>onPageChange(totalPages)}>{totalPages}</button>
+      </>}
+      <button style={page>=totalPages?disabled:base} disabled={page>=totalPages} onClick={()=>onPageChange(page+1)}>›</button>
+      <span style={{fontSize:12,color:"#9ca3af",marginLeft:6}}>Hal. {page}/{totalPages}</span>
     </div>
   );
 }

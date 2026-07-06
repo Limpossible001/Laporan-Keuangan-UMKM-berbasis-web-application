@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, PhoneField } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, PhoneField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
@@ -7,6 +7,7 @@ import { apiFetch } from "../api.js";
 export default function SuppliersPage() {
   const { showNotif } = useNotif();
   const [data, setData]           = useState([]);
+  const { paginated, page, setPage, totalPages } = usePagination(data, 10);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -17,7 +18,6 @@ export default function SuppliersPage() {
   const [form, setForm] = useState(EMPTY_FORM);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
-  // Khusus PhoneField — callback-nya langsung string E.164, bukan event
   const setPhone = (fullPhone) => setForm(f => ({ ...f, phone: fullPhone }));
 
   const loadData = async () => {
@@ -124,9 +124,10 @@ export default function SuppliersPage() {
               </div>
             )},
           ]}
-          data={data}
+          data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'Belum ada supplier. Klik "Add Supplier" untuk menambahkan.'}
         />
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {showModal && (

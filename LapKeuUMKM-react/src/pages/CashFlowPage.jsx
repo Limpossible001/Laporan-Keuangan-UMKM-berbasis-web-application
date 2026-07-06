@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, SelectField } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp } from "../components.jsx";
 import styles from "../styles.js";
@@ -16,6 +16,7 @@ const CATEGORIES = [
 export default function CashFlowPage() {
   const { showNotif } = useNotif();
   const [data, setData]       = useState([]);
+  const { paginated, page, setPage, totalPages } = usePagination(data, 10);
   const [loading, setLoading] = useState(true);
   const [showIn, setShowIn]   = useState(false);
   const [showOut, setShowOut] = useState(false);
@@ -153,9 +154,10 @@ export default function CashFlowPage() {
               <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
             )},
           ]}
-          data={data}
+          data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No cash flow records yet. Click "Add Cash In" or "Add Cash Out" to create one.'}
         />
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {showIn  && <CashModal type="in"  />}

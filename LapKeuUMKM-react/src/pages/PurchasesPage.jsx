@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, SelectField, PhoneField } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, SelectField, PhoneField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import { toRp, toQty } from "../components.jsx"; // Note 4
 import styles from "../styles.js";
@@ -8,6 +8,7 @@ import { apiFetch } from "../api.js";
 export default function PurchasesPage() {
   const { showNotif } = useNotif();
   const [data, setData]               = useState([]);
+  const { paginated, page, setPage, totalPages } = usePagination(data, 10);
   const [suppliers, setSuppliers]     = useState([]);
   const [inventory, setInventory]     = useState([]);
   const [loading, setLoading]         = useState(true);
@@ -154,9 +155,10 @@ export default function PurchasesPage() {
               <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
             )},
           ]}
-          data={data}
+          data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No purchase records yet. Click "Add Purchase" to create one.'}
         />
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {/* Modal: Add Purchase */}

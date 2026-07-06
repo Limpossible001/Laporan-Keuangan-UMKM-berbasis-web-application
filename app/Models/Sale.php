@@ -13,7 +13,8 @@ class Sale extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date'     => 'date',
+        'quantity' => 'integer', // Input 1
     ];
 
     public function inventory(): BelongsTo

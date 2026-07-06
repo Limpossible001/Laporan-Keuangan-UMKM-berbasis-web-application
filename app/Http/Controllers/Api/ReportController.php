@@ -32,6 +32,34 @@ class ReportController extends Controller
     }
 
     /**
+     * Input 3: Validasi range untuk load laporan(max 92 hari = 1 kuarter).
+     */
+    private function validateLoadRange(Carbon $from, Carbon $to): ?array
+    {
+        if ($from->greaterThan($to)) {
+            return ['message' => 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.'];
+        }
+        if ($from->diffInDays($to) > 92) {
+            return ['message' => 'Rentang laporan maksimal 92 hari (1 kuarter) per pembuatan laporan.'];
+        }
+        return null;
+    }
+
+    /**
+     * Input 3: Validasi range untuk export(max 31 hari).
+     */
+    private function validateExportRange(Carbon $from, Carbon $to): ?array
+    {
+        if ($from->greaterThan($to)) {
+            return ['message' => 'Tanggal awal tidak boleh lebih besar dari tanggal akhir.'];
+        }
+        if ($from->diffInDays($to) > 31) {
+            return ['message' => 'Rentang ekspor maksimal 31 hari per ekspor.'];
+        }
+        return null;
+    }
+
+    /**
      * Hitung Laba Rugi: Income (Sales) - COGS (Purchases) - OpEx (CashFlow keluar)
      */
     public function buildProfitLoss(Carbon $from, Carbon $to): array
@@ -75,7 +103,7 @@ class ReportController extends Controller
                 'category'    => $r->category,
                 'inflow'      => $r->type === 'in' ? (float) $r->amount : 0,
                 'outflow'     => $r->type === 'out' ? (float) $r->amount : 0,
-            ])->values()->toArray(),
+            ])->values()->toArray(), // Fix Bug#2: toArray() agar CashFlowSheet tidak dapat Collection
         ];
     }
 
@@ -101,6 +129,9 @@ class ReportController extends Controller
     public function profitLoss(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
+        if ($err = $this->validateLoadRange($from, $to)) {
+            return response()->json($err, 422);
+        }
         return response()->json($this->buildProfitLoss($from, $to) + [
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
         ]);
@@ -110,6 +141,9 @@ class ReportController extends Controller
     public function cashFlow(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
+        if ($err = $this->validateLoadRange($from, $to)) {
+            return response()->json($err, 422);
+        }
         return response()->json($this->buildCashFlow($from, $to) + [
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
         ]);
@@ -119,18 +153,21 @@ class ReportController extends Controller
     public function category(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
+        if ($err = $this->validateLoadRange($from, $to)) {
+            return response()->json($err, 422);
+        }
         return response()->json($this->buildCategory($from, $to) + [
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
         ]);
     }
 
-    /**
-     * GET /api/reports/export/pdf?from=&to=
-     * Laporan gabungan 3 modul (Profit&Loss, Cash Flow, Category) dalam 1 PDF berletterhead.
-     */
+    /** GET /api/reports/export/pdf */
     public function exportPdf(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
+        if ($err = $this->validateExportRange($from, $to)) {
+            return response()->json($err, 422);
+        }
 
         $data = [
             'businessName' => $request->user()->business_name ?: $request->user()->name,
@@ -142,22 +179,19 @@ class ReportController extends Controller
         ];
 
         $pdf = Pdf::loadView('reports.pdf', $data)->setPaper('a4', 'portrait');
-
         $filename = 'Laporan-Keuangan-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.pdf';
-
         return $pdf->download($filename);
     }
 
-    /**
-     * GET /api/reports/export/excel?from=&to=
-     * Workbook multi-sheet: Ringkasan, Laba Rugi, Arus Kas Detail, Kategori.
-     */
+    /** GET /api/reports/export/excel */
     public function exportExcel(Request $request)
     {
         [$from, $to] = $this->resolveRange($request);
+        if ($err = $this->validateExportRange($from, $to)) {
+            return response()->json($err, 422);
+        }
 
         $businessName = $request->user()->business_name ?: $request->user()->name;
-
         $filename = 'Laporan-Keuangan-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.xlsx';
 
         return Excel::download(

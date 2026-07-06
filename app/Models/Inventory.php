@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Inventory extends Model
 {
     protected $fillable = [
-        'product_name', 'category', 'unit_price',
+        'item_id', 'product_name', 'category', 'unit_price',
         'quantity', 'last_updated', 'notes'
     ];
 
     protected $casts = [
         'last_updated' => 'datetime',
+        'quantity'     => 'integer', //Notes Kak Rayhan: INT, bukan decimal
+        'unit_price'   => 'float',
     ];
 
     public function purchases(): HasMany
