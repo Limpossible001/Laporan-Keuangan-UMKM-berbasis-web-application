@@ -56,7 +56,7 @@ export default function LoginPage({ navigate }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
             <LogoIcon />
-            <span style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>UMKM Finance</span>
+            <span style={{ fontSize: 20, fontWeight: 700, color: "#111827" }}>UMKM Sejahtera</span>
           </div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>Welcome Back</h2>
           <p style={{ color: "#6b7280", fontSize: 14, margin: 0 }}>Login to access your dashboard</p>

@@ -131,13 +131,40 @@ export function UserIcon({ size = 20, color = "currentColor" }) {
   );
 }
 
+// Note 15 + 16: Logo Website (US-UMKM Sejahtera) + Logo Client (BU-LabAKT)
+// Cara pakai:
+//   Letakkan file PNG di: LapKeuUMKM-react/src/assets/
+//   - Logo website : src/assets/US-UMKM-Sejahtera.png
+//   - Logo client  : src/assets/BU-LabAKT.png
+// Panduan lengkap ada di README section "LOGO WEBSITE & LOGO CLIENT"
+
+// Path relatif dari folder assets — Vite resolve otomatis saat build
+// Kalau file belum ada, onError handler akan hide img tag (tidak crash)
+const LOGO_WEBSITE_PATH = "/src/assets/US-UMKM Sejahtera.png";
+const LOGO_CLIENT_PATH  = "/src/assets/BU-LabAKT.png";
+
 export function LogoIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect width="28" height="28" rx="6" fill="#4F46E5"/>
-      <path d="M7 20V12l7-5 7 5v8" stroke="white" strokeWidth="1.8" strokeLinejoin="round"/>
-      <rect x="11" y="15" width="6" height="5" rx="0.5" fill="white"/>
-    </svg>
+    <img
+      src={LOGO_WEBSITE_PATH}
+      alt="UMKM Sejahtera"
+      style={{ width: 32, height: 32, objectFit: "contain", display: "block" }}
+      onError={e => {
+        // Tanpa Fallback: tampilkan SVG placeholder kalau PNG belum ada
+        e.currentTarget.style.display = "none";
+      }}
+    />
+  );
+}
+
+export function ClientLogoIcon() {
+  return (
+    <img
+      src={LOGO_CLIENT_PATH}
+      alt="Lab AKT"
+      style={{ height: 26, width: "auto", maxWidth: 52, objectFit: "contain", display: "block", opacity: 0.85 }}
+      onError={e => { e.currentTarget.style.display = "none"; }}
+    />
   );
 }
 
@@ -438,12 +465,17 @@ export function SidebarLayout({ children, currentPath, navigate }) {
     <div style={styles.appShell}>
       {/* SIDEBAR */}
       <aside style={styles.sidebar}>
-        {/* Logo */}
+        {/* Logo — Note 15: UMKM Sejahtera | Note 16: Logo Client di sebelahnya */}
         <div style={styles.sidebarLogo}>
-          <LogoIcon />
+          {/* Baris logo: [logo website] [divider] [logo client] */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <LogoIcon />
+            <div style={{ width: 1, height: 22, background: "#e5e7eb", flexShrink: 0 }} />
+            <ClientLogoIcon />
+          </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>UMKM</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>Finance</div>
+            <div style={{ fontSize: 11, color: "#6b7280" }}>Sejahtera</div>
           </div>
         </div>
 

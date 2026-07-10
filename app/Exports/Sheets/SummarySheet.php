@@ -25,7 +25,7 @@ class SummarySheet implements FromArray, WithTitle, WithStyles, ShouldAutoSize
             [$this->businessName],
             ['Laporan Keuangan'],
             ['Periode: ' . $this->from->format('d M Y') . ' s/d ' . $this->to->format('d M Y')],
-            ['Dicetak: ' . Carbon::now()->format('d M Y H:i')],
+            ['Dicetak: ' . Carbon::now()->format('d M Y')],
             [],
             ['RINGKASAN LABA RUGI'],
             ['Total Pendapatan',        $this->profitLoss['total_income']],
