@@ -118,10 +118,7 @@ export default function SuppliersPage() {
             { key: "phone",          label: "PHONE"          },
             { key: "address",        label: "ADDRESS"        },
             { key: "actions", label: "ACTIONS", render: r => (
-              <div style={{ display: "flex", gap: 6 }}>
-                <Btn variant="outline" size="sm" onClick={() => openEdit(r)}>Edit</Btn>
-                <Btn variant="danger"  size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
-              </div>
+              <Btn variant="outline" size="sm" onClick={() => openEdit(r)}>Edit</Btn>
             )},
           ]}
           data={paginated}

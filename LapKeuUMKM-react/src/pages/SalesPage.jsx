@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
-import { toRp, toQty } from "../components.jsx"; // Note 4
+import { toRp, toQty, fmtDate } from "../components.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
@@ -123,20 +123,17 @@ export default function SalesPage() {
         </div>
         <Table
           columns={[
-            { key: "date",           label: "DATE" },
+            { key: "date",           label: "DATE",          render: r => fmtDate(r.date) },
             { key: "inventory",      label: "PRODUCT",       render: r => r.inventory?.product_name ?? "—" },
             { key: "quantity",       label: "QTY", render: r => toQty(r.quantity) },
             { key: "unit_price",     label: "UNIT PRICE",    render: r => toRp(r.unit_price) },
             { key: "total_revenue",  label: "TOTAL REVENUE", render: r => toRp(r.total_revenue) },
             { key: "customer_notes", label: "NOTES" },
-            { key: "actions", label: "ACTIONS", render: r => (
-              <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
-            )},
           ]}
           data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No sales records yet. Click "Add Sale" to create one.'}
         />
-        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage}/>
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
       {showModal && (

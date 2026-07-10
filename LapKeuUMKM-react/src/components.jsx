@@ -9,7 +9,27 @@ import { useAuth } from "./contexts.jsx";
 export const toRp = (val) =>
   "Rp " + Number(val ?? 0).toLocaleString("id-ID", { minimumFractionDigits: 0 });
 
-// Note 4: Quantity ditampilkan sebagai bilangan bulat (tanpa .00)
+// Note 14: Format tanggal dari ISO string → "14 Jun 2026"
+// Contoh: "2026-06-14T00:00:00.000000Z" → "14 Jun 2026"
+export const fmtDate = (val) => {
+  if (!val) return "—";
+  try {
+    return new Date(val).toLocaleDateString("id-ID", {
+      day: "2-digit", month: "short", year: "numeric",
+    });
+  } catch { return val; }
+};
+
+// Note 14: Format timestamp (untuk ActivityLog) → "14 Jun 2026, 08:30"
+export const fmtDateTime = (val) => {
+  if (!val) return "—";
+  try {
+    return new Date(val).toLocaleString("id-ID", {
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return val; }
+};
 // Contoh: 100.00 → "100", 1500 → "1.500" (separator ribuan id-ID)
 export const toQty = (val) =>
   Math.round(Number(val ?? 0)).toLocaleString("id-ID");

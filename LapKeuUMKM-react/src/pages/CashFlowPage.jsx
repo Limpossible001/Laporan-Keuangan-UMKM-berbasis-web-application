@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
-import { toRp } from "../components.jsx";
+import { toRp, fmtDate } from "../components.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
@@ -141,7 +141,7 @@ export default function CashFlowPage() {
         </div>
         <Table
           columns={[
-            { key: "date",        label: "DATE" },
+            { key: "date",        label: "DATE",     render: r => fmtDate(r.date) },
             { key: "type",        label: "TYPE", render: r => (
               <span style={{ color: r.type === "in" ? "#22c55e" : "#ef4444", fontWeight: 600 }}>
                 {r.type === "in" ? "Cash In" : "Cash Out"}
@@ -150,9 +150,6 @@ export default function CashFlowPage() {
             { key: "description", label: "DESCRIPTION" },
             { key: "category",    label: "CATEGORY" },
             { key: "amount",      label: "AMOUNT", render: r => toRp(r.amount) },
-            { key: "actions", label: "ACTIONS", render: r => (
-              <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
-            )},
           ]}
           data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No cash flow records yet. Click "Add Cash In" or "Add Cash Out" to create one.'}

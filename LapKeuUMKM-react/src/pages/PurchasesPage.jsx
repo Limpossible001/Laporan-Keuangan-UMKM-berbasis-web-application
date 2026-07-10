@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { StatCard, Btn, Table, Modal, Field, SelectField, PhoneField, PaginationBar, usePagination } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
-import { toRp, toQty } from "../components.jsx"; // Note 4
+import { toRp, toQty, fmtDate } from "../components.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
@@ -145,15 +145,12 @@ export default function PurchasesPage() {
         </div>
         <Table
           columns={[
-            { key: "date",          label: "DATE" },
-            { key: "supplier",      label: "SUPPLIER", render: r => r.supplier?.name ?? "—" },
-            { key: "inventory",     label: "ITEM",      render: r => r.inventory?.product_name ?? "—" },
-            { key: "quantity",      label: "QTY", render: r => toQty(r.quantity) },
+            { key: "date",          label: "DATE",        render: r => fmtDate(r.date) },
+            { key: "supplier",      label: "SUPPLIER",    render: r => r.supplier?.name ?? "—" },
+            { key: "inventory",     label: "ITEM",        render: r => r.inventory?.product_name ?? "—" },
+            { key: "quantity",      label: "QTY",         render: r => toQty(r.quantity) },
             { key: "unit_price",    label: "UNIT PRICE",  render: r => toRp(r.unit_price) },
             { key: "total_amount",  label: "TOTAL",       render: r => toRp(r.total_amount) },
-            { key: "actions", label: "ACTIONS", render: r => (
-              <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
-            )},
           ]}
           data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No purchase records yet. Click "Add Purchase" to create one.'}

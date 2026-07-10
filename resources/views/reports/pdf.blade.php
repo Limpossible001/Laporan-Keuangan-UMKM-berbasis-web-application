@@ -28,7 +28,7 @@
     <div class="letterhead">
         <h1>{{ $businessName }}</h1>
         <div class="sub">Laporan Keuangan &mdash; Periode {{ $periodLabel }}</div>
-        <div class="sub">Dicetak pada {{ $printedAt }}</div>
+        <div class="sub">Dicetak Pada Tanggal: {{ $printedAt }}</div>
     </div>
 
     {{-- ============ LABA RUGI ============ --}}

@@ -172,9 +172,6 @@ export default function InventoryPage() {
               const ok = Number(r.quantity) >= 10;
               return <span style={{ color: ok ? "#22c55e" : "#f59e0b", fontWeight:600 }}>{ok ? "OK" : "Low"}</span>;
             }},
-            { key: "actions", label: "AKSI", render: r => (
-              <Btn variant="danger" size="sm" onClick={() => handleDelete(r.id)}>Hapus</Btn>
-            )},
           ]}
           data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'Belum ada item.'}

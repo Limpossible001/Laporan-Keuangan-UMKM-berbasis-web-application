@@ -21,9 +21,9 @@ class SaleController extends Controller
         $validated = $request->validate([
             'date'           => 'required|date',
             'inventory_id'   => 'required|exists:inventories,id',
-            'quantity'       => 'required|numeric|min:0.01',
+            'quantity'       => 'required|integer|min:1',
             'unit_price'     => 'required|numeric|min:1',
-            'total_revenue'  => 'required|numeric|min:0.01',
+            'total_revenue'  => 'required|numeric|min:0',
             'customer_notes' => 'nullable|string',
         ]);
 
@@ -52,9 +52,9 @@ class SaleController extends Controller
         $validated = $request->validate([
             'date'           => 'required|date',
             'inventory_id'   => 'required|exists:inventories,id',
-            'quantity'       => 'required|numeric|min:0.01',
+            'quantity'       => 'required|integer|min:1',
             'unit_price'     => 'required|numeric|min:1',
-            'total_revenue'  => 'required|numeric|min:0.01',
+            'total_revenue'  => 'required|numeric|min:1',
             'customer_notes' => 'nullable|string',
         ]);
 

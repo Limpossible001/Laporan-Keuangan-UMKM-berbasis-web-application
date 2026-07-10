@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { StatCard, Table, PaginationBar, usePagination } from "../components.jsx";
+import { StatCard, Table, PaginationBar, usePagination, fmtDateTime } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
@@ -24,15 +24,7 @@ export default function ActivityLogPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const fmtTimestamp = (val) => {
-    if (!val) return "—";
-    try {
-      return new Date(val).toLocaleString("id-ID", {
-        day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      });
-    } catch { return val; }
-  };
+  // Note 14: fmtDateTime diimport dari components.jsx (shared helper)
 
   const todayCount = logs.filter(l => {
     if (!l.logged_at) return false;
@@ -55,7 +47,7 @@ export default function ActivityLogPage() {
         <p style={styles.cardSub}>Recent user actions and system changes</p>
         <Table
           columns={[
-            { key: "logged_at",   label: "TIMESTAMP", render: r => fmtTimestamp(r.logged_at) },
+            { key: "logged_at",   label: "TIMESTAMP", render: r => fmtDateTime(r.logged_at) },
             { key: "action",      label: "ACTION", render: r => (
               <span style={{
                 textTransform: "capitalize", fontWeight: 600,

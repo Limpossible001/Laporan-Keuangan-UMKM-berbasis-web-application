@@ -35,11 +35,11 @@ const styles = {
   },
   navItem: {
     display: "flex", alignItems: "center", gap: 10,
-    width: "100%", padding: "8px 16px",
+    width: "100%", padding: "8px 14px",
     background: "none", border: "none", textAlign: "left",
     fontSize: 13, color: "#374151", cursor: "pointer",
-    borderRadius: 0, transition: "background .12s",
-  },
+    borderRadius: 999, transition: "background .15s",
+  }, // Note 13: edit sikit
   navItemActive: { background: "#ede9fe", color: "#4F46E5", fontWeight: 600 },
   mainArea:    { flex: 1, display: "flex", flexDirection: "column", minWidth: 0 },
   topbar: {

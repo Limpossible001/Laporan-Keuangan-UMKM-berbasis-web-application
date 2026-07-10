@@ -13,8 +13,8 @@ class Purchase extends Model
     ];
 
     protected $casts = [
-        'date'      => 'date',
-        'quantity'  => 'integer', //Notes Kak Rayhan
+        'date'     => 'date',
+        'quantity' => 'integer', // Input 1
     ];
 
     public function supplier(): BelongsTo

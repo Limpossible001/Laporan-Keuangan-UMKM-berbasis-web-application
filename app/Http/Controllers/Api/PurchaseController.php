@@ -22,9 +22,9 @@ class PurchaseController extends Controller
             'date'          => 'required|date',
             'supplier_id'   => 'required|exists:suppliers,id',
             'inventory_id'  => 'required|exists:inventories,id',
-            'quantity'      => 'required|numeric|min:0.01',
+            'quantity'      => 'required|integer|min:1',
             'unit_price'    => 'required|numeric|min:1',
-            'total_amount'  => 'required|numeric|min:0.01',
+            'total_amount'  => 'required|numeric|min:0',
             'description'   => 'nullable|string',
         ]);
 
@@ -46,9 +46,9 @@ class PurchaseController extends Controller
             'date'          => 'required|date',
             'supplier_id'   => 'required|exists:suppliers,id',
             'inventory_id'  => 'required|exists:inventories,id',
-            'quantity'      => 'required|numeric|min:0.01',
+            'quantity'      => 'required|integer|min:1',
             'unit_price'    => 'required|numeric|min:1',
-            'total_amount'  => 'required|numeric|min:0.01',
+            'total_amount'  => 'required|numeric|min:0',
             'description'   => 'nullable|string',
         ]);
 

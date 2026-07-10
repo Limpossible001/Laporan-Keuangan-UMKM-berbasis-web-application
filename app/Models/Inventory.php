@@ -14,7 +14,7 @@ class Inventory extends Model
 
     protected $casts = [
         'last_updated' => 'datetime',
-        'quantity'     => 'integer', //Notes Kak Rayhan: INT, bukan decimal
+        'quantity'     => 'integer',   // Input 1: INT, bukan decimal
         'unit_price'   => 'float',
     ];
 

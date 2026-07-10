@@ -32,7 +32,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Input 3: Validasi range untuk load laporan(max 92 hari = 1 kuarter).
+     * Input 3: Validasi range untuk load laporan (max 92 hari = 1 kuarter).
      */
     private function validateLoadRange(Carbon $from, Carbon $to): ?array
     {
@@ -46,7 +46,7 @@ class ReportController extends Controller
     }
 
     /**
-     * Input 3: Validasi range untuk export(max 31 hari).
+     * Input 3: Validasi range untuk export (max 31 hari).
      */
     private function validateExportRange(Carbon $from, Carbon $to): ?array
     {
@@ -172,7 +172,7 @@ class ReportController extends Controller
         $data = [
             'businessName' => $request->user()->business_name ?: $request->user()->name,
             'periodLabel'  => $from->translatedFormat('d M Y') . ' – ' . $to->translatedFormat('d M Y'),
-            'printedAt'    => Carbon::now()->translatedFormat('d M Y, H:i'),
+            'printedAt'    => Carbon::now()->translatedFormat('d M Y'),
             'profitLoss'   => $this->buildProfitLoss($from, $to),
             'cashFlow'     => $this->buildCashFlow($from, $to),
             'category'     => $this->buildCategory($from, $to),
