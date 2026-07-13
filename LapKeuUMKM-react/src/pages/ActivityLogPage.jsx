@@ -35,7 +35,6 @@ export default function ActivityLogPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Activity Log</h1>
       <div style={styles.statsRow}>
         <StatCard label="TOTAL ACTIVITIES"   value={logs.length} subtitle="All time records" />
         <StatCard label="TODAY'S ACTIVITIES" value={todayCount}  subtitle="Activities today" />

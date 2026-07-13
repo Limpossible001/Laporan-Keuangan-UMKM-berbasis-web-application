@@ -106,7 +106,6 @@ export default function SalesPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Input Penjualan</h1>
       <div style={styles.statsRow}>
         <StatCard label="TOTAL SALES"   value={data.length}        subtitle="Total transactions" />
         <StatCard label="TOTAL REVENUE" value={toRp(totalRevenue)} subtitle="All time revenue" />

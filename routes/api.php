@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\PurchaseController;
@@ -23,6 +24,9 @@ Route::middleware('api')->group(function () {
 
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/auth/me',      [AuthController::class, 'me']);
+
+        // ── Dashboard (BARU — Tahap E) ───────────────────────────
+        Route::get('/dashboard', [DashboardController::class, 'index']);
 
         // ── Profile (BARU — Catatan #7) ─────────
         Route::get('/profile',  [ProfileController::class, 'show']);

@@ -125,7 +125,6 @@ export default function PurchasesPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Input Pembelian</h1>
       <div style={styles.statsRow}>
         <StatCard label="TOTAL PURCHASES"  value={data.length}       subtitle="Total records" />
         <StatCard label="TOTAL AMOUNT"     value={toRp(totalAmount)} subtitle="All time purchases" />

@@ -121,7 +121,6 @@ export default function CashFlowPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Input Kas</h1>
       <div style={styles.statsRow}>
         <StatCard label="CASH IN"       value={toRp(cashIn)}          subtitle="Total cash received" />
         <StatCard label="CASH OUT"      value={toRp(cashOut)}          subtitle="Total cash paid" />

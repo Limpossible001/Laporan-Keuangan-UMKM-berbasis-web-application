@@ -98,7 +98,6 @@ export default function SuppliersPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Suppliers</h1>
       <div style={styles.statsRow}>
         <StatCard label="TOTAL SUPPLIERS" value={data.length} subtitle="Registered suppliers" />
       </div>

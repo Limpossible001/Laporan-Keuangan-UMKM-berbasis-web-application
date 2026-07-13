@@ -115,8 +115,8 @@ function ReportCategory({ data }) {
 
 // ── Halaman utama ──────────────────────────────────────────────────────────
 
-const MAX_LOAD_DAYS   = 92;   // Maks per Buka
-const MAX_EXPORT_DAYS = 31;   // Maks per Ekspor
+const MAX_LOAD_DAYS   = 92;   // Input 3: max 1 kuarter per Buka
+const MAX_EXPORT_DAYS = 31;   // Input 3: max 31 hari per ekspor
 
 export default function ReportsPage() {
   const { showNotif } = useNotif();
@@ -201,7 +201,6 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Reports</h1>
 
       {/* ── Filter tanggal + tombol ── */}
       <div style={styles.card}>

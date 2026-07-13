@@ -131,28 +131,19 @@ export function UserIcon({ size = 20, color = "currentColor" }) {
   );
 }
 
-// Note 15 + 16: Logo Website (US-UMKM Sejahtera) + Logo Client (BU-LabAKT)
-// Cara pakai:
-//   Letakkan file PNG di: LapKeuUMKM-react/src/assets/
-//   - Logo website : src/assets/US-UMKM-Sejahtera.png
-//   - Logo client  : src/assets/BU-LabAKT.png
-// Panduan lengkap ada di README section "LOGO WEBSITE & LOGO CLIENT"
-
-// Path relatif dari folder assets — Vite resolve otomatis saat build
-// Kalau file belum ada, onError handler akan hide img tag (tidak crash)
-const LOGO_WEBSITE_PATH = "/src/assets/US-UMKM Sejahtera.png";
-const LOGO_CLIENT_PATH  = "/src/assets/BU-LabAKT.png";
+// Note 17: Logo via ES module import (production-safe, Vite akan hash nama file saat build)
+// Letakkan PNG di: LapKeuUMKM-react/src/assets/
+//   - US-UMKM-Sejahtera.png  (logo website)
+//   - BU-LabAKT.png          (logo client)
+import logoWebsite from "./assets/US-UMKM Sejahtera.png";
+import logoClient  from "./assets/BU-LabAKT.png";
 
 export function LogoIcon() {
   return (
     <img
-      src={LOGO_WEBSITE_PATH}
+      src={logoWebsite}
       alt="UMKM Sejahtera"
       style={{ width: 32, height: 32, objectFit: "contain", display: "block" }}
-      onError={e => {
-        // Tanpa Fallback: tampilkan SVG placeholder kalau PNG belum ada
-        e.currentTarget.style.display = "none";
-      }}
     />
   );
 }
@@ -160,10 +151,9 @@ export function LogoIcon() {
 export function ClientLogoIcon() {
   return (
     <img
-      src={LOGO_CLIENT_PATH}
+      src={logoClient}
       alt="Lab AKT"
       style={{ height: 26, width: "auto", maxWidth: 52, objectFit: "contain", display: "block", opacity: 0.85 }}
-      onError={e => { e.currentTarget.style.display = "none"; }}
     />
   );
 }
@@ -458,8 +448,196 @@ const NAV_ITEMS = [
   { path: "/panduan",      label: "Panduan",         icon: PanduanIcon   },
 ];
 
+// Note 8: peta route → judul halaman yang tampil di topbar
+const PAGE_TITLES = {
+  "/dashboard":    "Dashboard",
+  "/purchases":    "Input Pembelian",
+  "/suppliers":    "Suppliers",
+  "/sales":        "Input Penjualan",
+  "/cashflow":     "Input Kas",
+  "/inventory":    "Input Inventory",
+  "/reports":      "Reports",
+  "/activity-log": "Activity Log",
+  "/panduan":      "Panduan",
+  "/profile":      "Profile Settings",
+};
+
 export function SidebarLayout({ children, currentPath, navigate }) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const handleLogout = async () => {
+    setDropdownOpen(false);
+    await logout();
+    navigate("/login");
+  };
+
+  // Tutup dropdown kalau klik di luar (event delegation)
+  const handleOverlayClick = () => setDropdownOpen(false);
+
+  const pageTitle = PAGE_TITLES[currentPath] || "UMKM Sejahtera";
+
+  return (
+    <div style={styles.appShell}>
+      {/* Overlay transparan untuk tutup dropdown (Note 9) */}
+      {dropdownOpen && (
+        <div
+          onClick={handleOverlayClick}
+          style={{ position: "fixed", inset: 0, zIndex: 19 }}
+        />
+      )}
+
+      {/* SIDEBAR */}
+      <aside style={styles.sidebar}>
+        {/* Logo — Note 15+16 */}
+        <div style={styles.sidebarLogo}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <LogoIcon />
+            <div style={{ width: 1, height: 22, background: "#e5e7eb", flexShrink: 0 }} />
+            <ClientLogoIcon />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>UMKM</div>
+            <div style={{ fontSize: 11, color: "#6b7280" }}>Sejahtera</div>
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ flex: 1 }}>
+          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+            const active = currentPath === path;
+            return (
+              <button key={path} onClick={() => navigate(path)}
+                style={{ ...styles.navItem, ...(active ? styles.navItemActive : {}) }}>
+                <Icon size={16} color={active ? "#4F46E5" : "#6b7280"} />
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Note 11: Settings/Profile link di sidebar bawah (ganti Logout) */}
+        <div style={{ padding: "12px 10px", borderTop: "1px solid #f3f4f6" }}>
+          <button
+            onClick={() => navigate("/profile")}
+            style={{
+              display: "flex", alignItems: "center", gap: 10,
+              width: "100%", padding: "8px 14px",
+              background: "none", border: "none",
+              fontSize: 13, color: "#374151", cursor: "pointer",
+              borderRadius: 999, transition: "background .15s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = "#f3f4f6"}
+            onMouseLeave={e => e.currentTarget.style.background = "none"}
+          >
+            <UserIcon size={15} color="#6b7280" />
+            <span>Settings</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN AREA */}
+      <div style={styles.mainArea}>
+        {/* Topbar — Note 8: page title kiri | Note 10: nama user | Note 9: dropdown */}
+        <header style={styles.topbar}>
+          {/* Note 8: Judul halaman di kiri topbar */}
+          <h2 style={{
+            fontSize: 18, fontWeight: 700, color: "#111827",
+            margin: 0, letterSpacing: "-0.01em",
+          }}>
+            {pageTitle}
+          </h2>
+
+          <div style={{ flex: 1 }} />
+
+          {/* Note 10: Nama user/bisnis di sebelah kiri avatar */}
+          {user && (
+            <div style={{ textAlign: "right", marginRight: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", lineHeight: 1.2 }}>
+                {user.business_name || user.name || ""}
+              </div>
+              {user.business_name && (
+                <div style={{ fontSize: 11, color: "#6b7280" }}>{user.name}</div>
+              )}
+            </div>
+          )}
+
+          {/* Note 9: Avatar → dropdown My Account */}
+          <div style={{ position: "relative", zIndex: 20 }}>
+            <button
+              onClick={() => setDropdownOpen(o => !o)}
+              title="My Account"
+              style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+            >
+              <div style={styles.userBadge}>
+                <div style={styles.userAvatar}>
+                  <UserIcon size={16} color="#4F46E5" />
+                </div>
+              </div>
+            </button>
+
+            {/* Dropdown panel */}
+            {dropdownOpen && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 8px)", right: 0,
+                background: "#fff", borderRadius: 10,
+                boxShadow: "0 8px 32px rgba(0,0,0,.13)",
+                border: "1px solid #e5e7eb",
+                minWidth: 180, padding: "6px 0",
+              }}>
+                {/* Header */}
+                <p style={{
+                  margin: 0, padding: "8px 16px 6px",
+                  fontSize: 12, fontWeight: 700, color: "#6b7280",
+                  letterSpacing: ".06em", textTransform: "uppercase",
+                }}>My Account</p>
+                <div style={{ height: 1, background: "#f3f4f6", margin: "4px 0" }} />
+
+                {/* Settings */}
+                <button
+                  onClick={() => { setDropdownOpen(false); navigate("/profile"); }}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", padding: "9px 16px",
+                    background: "none", border: "none",
+                    fontSize: 14, color: "#111827", cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#f9fafb"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <span style={{ fontSize: 15 }}>⚙️</span>
+                  <span>Settings</span>
+                </button>
+
+                {/* Logout — merah */}
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    width: "100%", padding: "9px 16px",
+                    background: "none", border: "none",
+                    fontSize: 14, color: "#ef4444", cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}
+                >
+                  <span style={{ fontSize: 15 }}>🚪</span>
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main style={styles.pageContent}>
+          {children}
+        </main>
+      </div>
+    </div>
+  );
 
   return (
     <div style={styles.appShell}>

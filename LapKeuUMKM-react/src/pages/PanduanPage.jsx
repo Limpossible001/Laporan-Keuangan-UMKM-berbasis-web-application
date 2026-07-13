@@ -76,7 +76,6 @@ const SECTIONS = [
 export default function PanduanPage() {
   return (
     <div>
-      <h1 style={styles.pageTitle}>Panduan</h1>
       <div style={styles.card}>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
           User Guide – UMKM Financial Management System

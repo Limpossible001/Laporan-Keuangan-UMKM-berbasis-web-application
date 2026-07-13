@@ -136,7 +136,6 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <h1 style={styles.pageTitle}>Input Inventory</h1>
       <div style={styles.statsRow}>
         <StatCard label="TOTAL PRODUK"    value={toQty(data.length)}  subtitle="Item unik" />
         <StatCard label="TOTAL STOK"      value={toQty(totalStock)}   subtitle="Total unit" />
