@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "./styles.js";
 import { useAuth } from "./contexts.jsx";
 
@@ -9,8 +9,6 @@ import { useAuth } from "./contexts.jsx";
 export const toRp = (val) =>
   "Rp " + Number(val ?? 0).toLocaleString("id-ID", { minimumFractionDigits: 0 });
 
-// Note 14: Format tanggal dari ISO string → "14 Jun 2026"
-// Contoh: "2026-06-14T00:00:00.000000Z" → "14 Jun 2026"
 export const fmtDate = (val) => {
   if (!val) return "—";
   try {
@@ -20,7 +18,6 @@ export const fmtDate = (val) => {
   } catch { return val; }
 };
 
-// Note 14: Format timestamp (untuk ActivityLog) → "14 Jun 2026, 08:30"
 export const fmtDateTime = (val) => {
   if (!val) return "—";
   try {
@@ -30,11 +27,11 @@ export const fmtDateTime = (val) => {
     });
   } catch { return val; }
 };
-// Contoh: 100.00 → "100", 1500 → "1.500" (separator ribuan id-ID)
+
 export const toQty = (val) =>
   Math.round(Number(val ?? 0)).toLocaleString("id-ID");
 
-// ===========================================================
+// =========================================================
 // SVG ICONS
 // =========================================================
 
@@ -131,10 +128,7 @@ export function UserIcon({ size = 20, color = "currentColor" }) {
   );
 }
 
-// Note 17: Logo via ES module import (production-safe, Vite akan hash nama file saat build)
-// Letakkan PNG di: LapKeuUMKM-react/src/assets/
-//   - US-UMKM-Sejahtera.png  (logo website)
-//   - BU-LabAKT.png          (logo client)
+// Note 17: Logo via ES module import
 import logoWebsite from "./assets/US-UMKM Sejahtera.png";
 import logoClient  from "./assets/BU-LabAKT.png";
 
@@ -253,11 +247,6 @@ export function Modal({ title, onClose, children }) {
   );
 }
 
-// Note 2: PhoneField — dropdown kode negara + input digit
-// Cara pakai:
-//   <PhoneField label="Phone" value={form.phone} onChange={(fullPhone) => setForm(f => ({...f, phone: fullPhone}))} required />
-// `value` dan callback mengembalikan string E.164 lengkap, mis. "+6281234567890"
-
 const COUNTRY_CODES = [
   { code: "+62",  flag: "🇮🇩", label: "ID (+62)"  },
   { code: "+1",   flag: "🇺🇸", label: "US (+1)"   },
@@ -273,7 +262,6 @@ const COUNTRY_CODES = [
   { code: "+966", flag: "🇸🇦", label: "SA (+966)" },
 ];
 
-// Pisahkan string E.164 (mis. "+6281234567") jadi [kodeNegara, nomorLokal]
 function splitPhone(fullPhone) {
   if (!fullPhone) return { countryCode: "+62", localNumber: "" };
   const match = COUNTRY_CODES.find(c => fullPhone.startsWith(c.code));
@@ -296,27 +284,25 @@ export function PhoneField({ label, value, onChange, required }) {
   };
 
   const selectStyle = {
-    height: 40,
-    border: "1.5px solid #e5e7eb",
+    height: 40, 
+    border: "1.5px solid #e5e7eb", 
     borderRadius: "8px 0 0 8px",
-    borderRight: "none",
-    padding: "0 8px",
-    fontSize: 13,
+    borderRight: "none", 
+    padding: "0 8px", 
+    fontSize: 13, 
     color: "#374151",
-    background: "#f9fafb",
-    cursor: "pointer",
+    background: "#f9fafb", 
+    cursor: "pointer", 
     outline: "none",
   };
-
   const inputStyle = {
-    flex: 1,
-    height: 40,
-    border: "1.5px solid #e5e7eb",
+    flex: 1, 
+    height: 40, 
+    border: "1.5px solid #e5e7eb", 
     borderRadius: "0 8px 8px 0",
-    padding: "0 12px",
-    fontSize: 14,
-    color: "#111827",
-    background: "#fff",
+    padding: "0 12px", 
+    fontSize: 14, color: "#111827", 
+    background: "#fff", 
     outline: "none",
   };
 
@@ -332,13 +318,13 @@ export function PhoneField({ label, value, onChange, required }) {
             <option key={c.code} value={c.code}>{c.flag} {c.label}</option>
           ))}
         </select>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={localNumber}
-          onChange={handleNumber}
-          placeholder="81234567890"
-          style={inputStyle}
+        <input 
+        type="text" 
+        inputMode="numeric" 
+        value={localNumber}
+        onChange={handleNumber} 
+        placeholder="81234567890" 
+        style={inputStyle} 
         />
       </div>
       {localNumber && (
@@ -384,12 +370,9 @@ export function SelectField({ label, value, onChange, options, required }) {
 }
 
 // =========================================================
-// PAGINATION (Input 5)
+// PAGINATION
 // =========================================================
 
-/**
- * Hook FE-only pagination — slice data yang sudah di-fetch.
- */
 export function usePagination(data, pageSize = 10) {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil((data?.length ?? 0) / pageSize));
@@ -407,10 +390,10 @@ export function PaginationBar({ page, totalPages, onPageChange }) {
     range.push(i);
   }
 
-  const base    = { minWidth:32, height:32, border:"1.5px solid #e5e7eb", borderRadius:6, background:"#fff",
+  const base     = { minWidth:32, height:32, border:"1.5px solid #e5e7eb", borderRadius:6, background:"#fff",
     cursor:"pointer", fontSize:13, color:"#374151", display:"inline-flex", alignItems:"center", justifyContent:"center" };
-  const active  = { ...base, background:"#4F46E5", color:"#fff", borderColor:"#4F46E5", fontWeight:700 };
-  const disabled= { ...base, opacity:.4, cursor:"not-allowed" };
+  const active   = { ...base, background:"#4F46E5", color:"#fff", borderColor:"#4F46E5", fontWeight:700 };
+  const disabled = { ...base, opacity:.4, cursor:"not-allowed" };
 
   return (
     <div style={{ display:"flex", justifyContent:"flex-end", alignItems:"center", gap:4, marginTop:12 }}>
@@ -448,7 +431,6 @@ const NAV_ITEMS = [
   { path: "/panduan",      label: "Panduan",         icon: PanduanIcon   },
 ];
 
-// Note 8: peta route → judul halaman yang tampil di topbar
 const PAGE_TITLES = {
   "/dashboard":    "Dashboard",
   "/purchases":    "Input Pembelian",
@@ -466,30 +448,32 @@ export function SidebarLayout({ children, currentPath, navigate }) {
   const { user, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // ── FIX KRITIS: gunakan document mousedown listener, bukan overlay div ──
+  // Root cause: styles.topbar punya `position: sticky, zIndex: 10` → membuat
+  // stacking context di level 10. Overlay div (position: fixed, zIndex: 29)
+  // ada di ATAS stacking context topbar → memblokir SEMUA klik di dalam topbar
+  // termasuk tombol dropdown. Solusi: hapus overlay, pakai document listener.
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const closeDropdown = () => setDropdownOpen(false);
+    document.addEventListener("mousedown", closeDropdown);
+    return () => document.removeEventListener("mousedown", closeDropdown);
+  }, [dropdownOpen]);
+
   const handleLogout = async () => {
     setDropdownOpen(false);
     await logout();
     navigate("/login");
   };
 
-  // Tutup dropdown kalau klik di luar (event delegation)
-  const handleOverlayClick = () => setDropdownOpen(false);
-
   const pageTitle = PAGE_TITLES[currentPath] || "UMKM Sejahtera";
 
   return (
     <div style={styles.appShell}>
-      {/* Overlay transparan untuk tutup dropdown (Note 9) */}
-      {dropdownOpen && (
-        <div
-          onClick={handleOverlayClick}
-          style={{ position: "fixed", inset: 0, zIndex: 19 }}
-        />
-      )}
 
       {/* SIDEBAR */}
       <aside style={styles.sidebar}>
-        {/* Logo — Note 15+16 */}
+        {/* Logo */}
         <div style={styles.sidebarLogo}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <LogoIcon />
@@ -498,7 +482,7 @@ export function SidebarLayout({ children, currentPath, navigate }) {
           </div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>UMKM</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>Sejahtera</div>
+            <div style={{ fontSize: 13, fontWeight: 400, color: "#6b7280", lineHeight: 1.2 }}>Sejahtera</div>
           </div>
         </div>
 
@@ -516,7 +500,7 @@ export function SidebarLayout({ children, currentPath, navigate }) {
           })}
         </nav>
 
-        {/* Note 11: Settings/Profile link di sidebar bawah (ganti Logout) */}
+        {/* Settings link di sidebar bawah */}
         <div style={{ padding: "12px 10px", borderTop: "1px solid #f3f4f6" }}>
           <button
             onClick={() => navigate("/profile")}
@@ -538,19 +522,15 @@ export function SidebarLayout({ children, currentPath, navigate }) {
 
       {/* MAIN AREA */}
       <div style={styles.mainArea}>
-        {/* Topbar — Note 8: page title kiri | Note 10: nama user | Note 9: dropdown */}
         <header style={styles.topbar}>
-          {/* Note 8: Judul halaman di kiri topbar */}
-          <h2 style={{
-            fontSize: 18, fontWeight: 700, color: "#111827",
-            margin: 0, letterSpacing: "-0.01em",
-          }}>
+          {/* Judul halaman kiri */}
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#111827", margin: 0, letterSpacing: "-0.01em" }}>
             {pageTitle}
           </h2>
 
           <div style={{ flex: 1 }} />
 
-          {/* Note 10: Nama user/bisnis di sebelah kiri avatar */}
+          {/* Nama bisnis + user kanan */}
           {user && (
             <div style={{ textAlign: "right", marginRight: 10 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", lineHeight: 1.2 }}>
@@ -562,8 +542,8 @@ export function SidebarLayout({ children, currentPath, navigate }) {
             </div>
           )}
 
-          {/* Note 9: Avatar → dropdown My Account */}
-          <div style={{ position: "relative", zIndex: 20 }}>
+          {/* Avatar + Dropdown */}
+          <div style={{ position: "relative" }}>
             <button
               onClick={() => setDropdownOpen(o => !o)}
               title="My Account"
@@ -576,16 +556,21 @@ export function SidebarLayout({ children, currentPath, navigate }) {
               </div>
             </button>
 
-            {/* Dropdown panel */}
+            {/* Dropdown panel
+                onMouseDown stopPropagation: mencegah document listener menutup
+                panel sebelum onClick pada tombol di dalam sempat terpanggil */}
             {dropdownOpen && (
-              <div style={{
-                position: "absolute", top: "calc(100% + 8px)", right: 0,
-                background: "#fff", borderRadius: 10,
-                boxShadow: "0 8px 32px rgba(0,0,0,.13)",
-                border: "1px solid #e5e7eb",
-                minWidth: 180, padding: "6px 0",
-              }}>
-                {/* Header */}
+              <div
+                onMouseDown={e => e.stopPropagation()}
+                style={{
+                  position: "absolute", top: "calc(100% + 8px)", right: 0,
+                  background: "#fff", borderRadius: 10,
+                  boxShadow: "0 8px 32px rgba(0,0,0,.15)",
+                  border: "1px solid #e5e7eb",
+                  minWidth: 180, padding: "6px 0",
+                  zIndex: 9999,
+                }}
+              >
                 <p style={{
                   margin: 0, padding: "8px 16px 6px",
                   fontSize: 12, fontWeight: 700, color: "#6b7280",
@@ -593,7 +578,7 @@ export function SidebarLayout({ children, currentPath, navigate }) {
                 }}>My Account</p>
                 <div style={{ height: 1, background: "#f3f4f6", margin: "4px 0" }} />
 
-                {/* Settings */}
+                {/* ⚙️ Settings */}
                 <button
                   onClick={() => { setDropdownOpen(false); navigate("/profile"); }}
                   style={{
@@ -610,7 +595,7 @@ export function SidebarLayout({ children, currentPath, navigate }) {
                   <span>Settings</span>
                 </button>
 
-                {/* Logout — merah */}
+                {/* 🚪 Logout */}
                 <button
                   onClick={handleLogout}
                   style={{
@@ -631,81 +616,6 @@ export function SidebarLayout({ children, currentPath, navigate }) {
           </div>
         </header>
 
-        {/* Page content */}
-        <main style={styles.pageContent}>
-          {children}
-        </main>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={styles.appShell}>
-      {/* SIDEBAR */}
-      <aside style={styles.sidebar}>
-        {/* Logo — Note 15: UMKM Sejahtera | Note 16: Logo Client di sebelahnya */}
-        <div style={styles.sidebarLogo}>
-          {/* Baris logo: [logo website] [divider] [logo client] */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <LogoIcon />
-            <div style={{ width: 1, height: 22, background: "#e5e7eb", flexShrink: 0 }} />
-            <ClientLogoIcon />
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#111827", lineHeight: 1.2 }}>UMKM</div>
-            <div style={{ fontSize: 11, color: "#6b7280" }}>Sejahtera</div>
-          </div>
-        </div>
-
-        {/* Nav */}
-        <nav style={{ flex: 1 }}>
-          {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
-            const active = currentPath === path;
-            return (
-              <button key={path} onClick={() => navigate(path)}
-                style={{ ...styles.navItem, ...(active ? styles.navItemActive : {}) }}>
-                <Icon size={16} color={active ? "#4F46E5" : "#6b7280"} />
-                <span>{label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Logout */}
-        <div style={{ padding: "12px 16px", borderTop: "1px solid #f3f4f6" }}>
-          <button
-            onClick={async () => { await logout(); navigate("/login"); }}
-            style={{
-              display: "flex", alignItems: "center", gap: 10,
-              width: "100%", padding: "8px 0",
-              background: "none", border: "none",
-              fontSize: 13, color: "#ef4444", cursor: "pointer",
-            }}>
-            <span>🚪</span>
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* MAIN AREA */}
-      <div style={styles.mainArea}>
-        {/* Topbar */}
-        <header style={styles.topbar}>
-          <div style={{ flex: 1 }} />
-          <button
-            onClick={() => navigate("/profile")}
-            title="Profile Settings"
-            style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-          >
-            <div style={styles.userBadge}>
-              <div style={styles.userAvatar}>
-                <UserIcon size={16} color="#4F46E5" />
-              </div>
-            </div>
-          </button>
-        </header>
-
-        {/* Page content */}
         <main style={styles.pageContent}>
           {children}
         </main>

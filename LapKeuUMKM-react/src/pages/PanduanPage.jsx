@@ -78,10 +78,10 @@ export default function PanduanPage() {
     <div>
       <div style={styles.card}>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>
-          User Guide – UMKM Financial Management System
+          User Guide – UMKM Sejahtera (Sistem Laporan Keuangan UMKM)
         </h2>
         <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>
-          Panduan penggunaan sistem laporan keuangan UMKM.
+          Panduan penggunaan sistem kami.
         </p>
 
         <div style={{ ...styles.panduanSection, marginBottom: 20 }}>
@@ -94,7 +94,7 @@ export default function PanduanPage() {
                 mengikuti struktur yang sama dengan template pelaporan keuangan berbasis Excel.
               </p>
               <p style={{ color: "#374151", fontSize: 14, margin: 0 }}>
-                Sistem mencatat supplier, pembelian, penjualan, arus kas, dan inventory — komponen kritis
+                Sistem mencatat supplier, pembelian, penjualan, arus kas, dan inventory seputar komponen kritis
                 manajemen keuangan UMKM, dengan stok inventory yang saling terhubung antara pembelian dan penjualan.
               </p>
             </div>

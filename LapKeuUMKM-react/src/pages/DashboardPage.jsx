@@ -4,8 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer,
 } from "recharts";
-import { StatCard } from "../components.jsx";
-import { toRp, toQty } from "../components.jsx";
+import { StatCard, toRp, toQty } from "../components.jsx";
 import { apiFetch } from "../api.js";
 import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
@@ -113,8 +112,8 @@ export default function DashboardPage() {
                 <YAxis tickFormatter={v => `${(v/1000000).toFixed(1)}jt`} tick={{ fontSize: 10, fill: "#6b7280" }} width={48} />
                 <Tooltip content={<RpTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="inflow"  name="Kas Masuk"  stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="outflow" name="Kas Keluar" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="outflow" name="Kas Keluar" stroke="#D3D3D3" strokeWidth={2} dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="inflow"  name="Kas Masuk"  stroke="#4F46E5" strokeWidth={2} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>
           )}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar, usePagination } from "../components.jsx";
+import { StatCard, Btn, Table, Modal, Field, SelectField, PaginationBar, usePagination, toRp, fmtDate } from "../components.jsx";
 import { useNotif } from "../contexts.jsx";
-import { toRp, fmtDate } from "../components.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
@@ -142,7 +141,7 @@ export default function CashFlowPage() {
           columns={[
             { key: "date",        label: "DATE",     render: r => fmtDate(r.date) },
             { key: "type",        label: "TYPE", render: r => (
-              <span style={{ color: r.type === "in" ? "#22c55e" : "#ef4444", fontWeight: 600 }}>
+              <span style={{ color: r.type === "in" ? "#4F46E5" : "#D3D3D3", fontWeight: 600 }}>
                 {r.type === "in" ? "Cash In" : "Cash Out"}
               </span>
             )},
