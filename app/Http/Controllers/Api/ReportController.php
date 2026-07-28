@@ -61,33 +61,39 @@ class ReportController extends Controller
 
     /**
      * Hitung Laba Rugi: Income (Sales) - COGS (Purchases) - OpEx (CashFlow keluar)
+     * FIX: tambah parameter $userId — sebelumnya laporan siapa pun menghitung
+     * SEMUA transaksi di database, bukan cuma milik user yang login.
      */
-    public function buildProfitLoss(Carbon $from, Carbon $to): array
+    public function buildProfitLoss(int $userId, Carbon $from, Carbon $to): array
     {
-        $totalIncome = (float) Sale::whereBetween('date', [$from, $to])->sum('total_revenue');
-        $cogs        = (float) Purchase::whereBetween('date', [$from, $to])->sum('total_amount');
-        $opEx        = (float) CashFlow::whereBetween('date', [$from, $to])->where('type', 'out')->sum('amount');
+        $totalIncome = (float) Sale::where('user_id', $userId)
+            ->whereBetween('date', [$from, $to])->sum('total_revenue');
+        $cogs        = (float) Purchase::where('user_id', $userId)
+            ->whereBetween('date', [$from, $to])->sum('total_amount');
+        $opEx        = (float) CashFlow::where('user_id', $userId)
+            ->whereBetween('date', [$from, $to])->where('type', 'out')->sum('amount');
 
         $totalExpenses = $cogs + $opEx;
         $netProfit     = $totalIncome - $totalExpenses;
         $margin        = $totalIncome > 0 ? round(($netProfit / $totalIncome) * 100, 2) : 0;
 
         return [
-            'total_income'   => $totalIncome,
-            'cogs'           => $cogs,
-            'operating_expenses' => $opEx,
-            'total_expenses' => $totalExpenses,
-            'net_profit'     => $netProfit,
-            'profit_margin'  => $margin,
+            'total_income'        => $totalIncome,
+            'cogs'                => $cogs,
+            'operating_expenses'  => $opEx,
+            'total_expenses'      => $totalExpenses,
+            'net_profit'          => $netProfit,
+            'profit_margin'       => $margin,
         ];
     }
 
     /**
      * Detail Arus Kas (murni dari tabel cash_flows, sesuai UI ReportCashFlow yang sudah ada)
      */
-    public function buildCashFlow(Carbon $from, Carbon $to): array
+    public function buildCashFlow(int $userId, Carbon $from, Carbon $to): array
     {
-        $rows = CashFlow::whereBetween('date', [$from, $to])->orderBy('date')->get();
+        $rows = CashFlow::where('user_id', $userId)
+            ->whereBetween('date', [$from, $to])->orderBy('date')->get();
 
         $inflow  = (float) $rows->where('type', 'in')->sum('amount');
         $outflow = (float) $rows->where('type', 'out')->sum('amount');
@@ -103,16 +109,16 @@ class ReportController extends Controller
                 'category'    => $r->category,
                 'inflow'      => $r->type === 'in' ? (float) $r->amount : 0,
                 'outflow'     => $r->type === 'out' ? (float) $r->amount : 0,
-            ])->values()->toArray(), // Fix Bug#2: toArray() agar CashFlowSheet tidak dapat Collection
+            ])->values()->toArray(),
         ];
     }
 
     /**
      * Analisis Kategori: income & expense dikelompokkan per category (dari cash_flows)
      */
-    public function buildCategory(Carbon $from, Carbon $to): array
+    public function buildCategory(int $userId, Carbon $from, Carbon $to): array
     {
-        $rows = CashFlow::whereBetween('date', [$from, $to])->get();
+        $rows = CashFlow::where('user_id', $userId)->whereBetween('date', [$from, $to])->get();
 
         $income  = $rows->where('type', 'in')->groupBy('category')
             ->map(fn ($g) => (float) $g->sum('amount'));
@@ -132,7 +138,7 @@ class ReportController extends Controller
         if ($err = $this->validateLoadRange($from, $to)) {
             return response()->json($err, 422);
         }
-        return response()->json($this->buildProfitLoss($from, $to) + [
+        return response()->json($this->buildProfitLoss($request->user()->id, $from, $to) + [
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
         ]);
     }
@@ -144,7 +150,7 @@ class ReportController extends Controller
         if ($err = $this->validateLoadRange($from, $to)) {
             return response()->json($err, 422);
         }
-        return response()->json($this->buildCashFlow($from, $to) + [
+        return response()->json($this->buildCashFlow($request->user()->id, $from, $to) + [
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
         ]);
     }
@@ -156,7 +162,7 @@ class ReportController extends Controller
         if ($err = $this->validateLoadRange($from, $to)) {
             return response()->json($err, 422);
         }
-        return response()->json($this->buildCategory($from, $to) + [
+        return response()->json($this->buildCategory($request->user()->id, $from, $to) + [
             'from' => $from->toDateString(), 'to' => $to->toDateString(),
         ]);
     }
@@ -169,13 +175,15 @@ class ReportController extends Controller
             return response()->json($err, 422);
         }
 
+        $userId = $request->user()->id;
+
         $data = [
             'businessName' => $request->user()->business_name ?: $request->user()->name,
             'periodLabel'  => $from->translatedFormat('d M Y') . ' – ' . $to->translatedFormat('d M Y'),
             'printedAt'    => Carbon::now()->translatedFormat('d M Y'),
-            'profitLoss'   => $this->buildProfitLoss($from, $to),
-            'cashFlow'     => $this->buildCashFlow($from, $to),
-            'category'     => $this->buildCategory($from, $to),
+            'profitLoss'   => $this->buildProfitLoss($userId, $from, $to),
+            'cashFlow'     => $this->buildCashFlow($userId, $from, $to),
+            'category'     => $this->buildCategory($userId, $from, $to),
         ];
 
         $pdf = Pdf::loadView('reports.pdf', $data)->setPaper('a4', 'portrait');
@@ -191,14 +199,15 @@ class ReportController extends Controller
             return response()->json($err, 422);
         }
 
+        $userId       = $request->user()->id;
         $businessName = $request->user()->business_name ?: $request->user()->name;
-        $filename = 'Laporan-Keuangan-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.xlsx';
+        $filename     = 'Laporan-Keuangan-' . $from->format('Ymd') . '-' . $to->format('Ymd') . '.xlsx';
 
         return Excel::download(
             new FinancialReportExport(
-                $this->buildProfitLoss($from, $to),
-                $this->buildCashFlow($from, $to),
-                $this->buildCategory($from, $to),
+                $this->buildProfitLoss($userId, $from, $to),
+                $this->buildCashFlow($userId, $from, $to),
+                $this->buildCategory($userId, $from, $to),
                 $businessName,
                 $from,
                 $to

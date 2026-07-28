@@ -4,6 +4,97 @@ import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
+// ── Helper tanggal ──────────────────────────────────────────────
+// Ambil tanggal hari ini dalam format ISO (yyyy-mm-dd) berdasarkan waktu lokal browser
+function todayIso() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Konversi yyyy-mm-dd -> dd-mm-yyyy untuk ditampilkan ke user
+function isoToDisplay(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "";
+  return `${d}-${m}-${y}`;
+}
+
+// ── Komponen Field Tanggal Terkunci ─────────────────────────────
+function LockedDateField({ label = "Sale Date", value, onChange, required }) {
+  const today = todayIso();
+
+  useEffect(() => {
+    if (!value) onChange(today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const displayValue = isoToDisplay(value || today);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+        {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
+      </label>
+
+      <div style={{ position: "relative" }}>
+        <input
+          type="text"
+          readOnly
+          value={displayValue}
+          placeholder="dd-mm-yyyy"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "10px 36px 10px 12px",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            fontSize: 14,
+            color: "#111827",
+            background: "#f9fafb",
+            cursor: "pointer",
+          }}
+        />
+
+        <span
+          style={{
+            position: "absolute",
+            right: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            fontSize: 16,
+          }}
+        >
+          📅
+        </span>
+
+        <input
+          type="date"
+          value={value || today}
+          min={today}
+          max={today}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            opacity: 0,
+            cursor: "pointer",
+          }}
+        />
+      </div>
+
+      <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+        Hanya tanggal hari ini yang bisa dipilih (tidak bisa backdate / forward date).
+      </p>
+    </div>
+  );
+}
+
 const CATEGORIES = [
   { value: "operasional", label: "Operasional" },
   { value: "modal",       label: "Modal" },
@@ -20,7 +111,7 @@ export default function CashFlowPage() {
   const [showIn, setShowIn]   = useState(false);
   const [showOut, setShowOut] = useState(false);
   const [form, setForm]       = useState({
-    date: "", type: "in", description: "", category: "", amount: ""
+    date: todayIso(), type: "in", description: "", category: "", amount: ""
   });
 
   const set     = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -49,6 +140,9 @@ export default function CashFlowPage() {
     if (Number(form.amount) <= 0) {
       showNotif("Jumlah harus lebih dari 0", "error"); return;
     }
+    if (form.date !== todayIso()){
+      showNotif("Tanggal penjualan harus hari ini", "error"); return;
+    }
 
     try {
       const payload = {
@@ -60,7 +154,7 @@ export default function CashFlowPage() {
       };
       const res = await apiFetch("/cashflows", { method: "POST", body: JSON.stringify(payload) });
       setData(d => [res, ...d]);
-      setForm({ date: "", type: "in", description: "", category: "", amount: "" });
+      setForm({ date: todayIso(), type: "in", description: "", category: "", amount: "" });
       close();
       showNotif(`Cash ${form.type === "in" ? "In" : "Out"} berhasil ditambahkan`);
     } catch (e) {
@@ -80,43 +174,6 @@ export default function CashFlowPage() {
 
   const cashIn  = data.filter(r => r.type === "in" ).reduce((s, r) => s + Number(r.amount), 0);
   const cashOut = data.filter(r => r.type === "out").reduce((s, r) => s + Number(r.amount), 0);
-
-  const CashModal = ({ type }) => (
-    <Modal title={`Add Cash ${type === "in" ? "In" : "Out"}`} onClose={close}>
-      <Field
-        label="Transaction Date" type="date"
-        value={form.date} onChange={set("date")} required
-      />
-      <div style={{ marginBottom: 14 }}>
-        <label style={styles.fieldLabel}>Transaction Type</label>
-        <select value={form.type} onChange={set("type")} style={styles.input}>
-          <option value="in">Cash In</option>
-          <option value="out">Cash Out</option>
-        </select>
-      </div>
-      <Field
-        label="Description"
-        value={form.description} onChange={set("description")}
-        placeholder="Enter description" required
-      />
-      <SelectField
-        label="Category"
-        value={form.category} onChange={set("category")}
-        options={CATEGORIES} required
-      />
-      <Field
-        label="Amount (Rp)" type="number"
-        value={form.amount} onChange={set("amount")}
-        min="1" step="1" required
-      />
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
-        <Btn variant="outline" onClick={close}>Cancel</Btn>
-        <Btn variant={type === "in" ? "success" : "danger"} onClick={handleAdd}>
-          Add Cash {type === "in" ? "In" : "Out"}
-        </Btn>
-      </div>
-    </Modal>
-  );
 
   return (
     <div>
@@ -155,8 +212,45 @@ export default function CashFlowPage() {
         <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
-      {showIn  && <CashModal type="in"  />}
-      {showOut && <CashModal type="out" />}
+      {/* Perbaikan: Modal di-render secara inline, menghindari komponen di dalam komponen */}
+      {(showIn || showOut) && (
+        <Modal title={`Add Cash ${form.type === "in" ? "In" : "Out"}`} onClose={close}>
+          <LockedDateField
+            label="Transaction Date" 
+            value={form.date} 
+            onChange={(val) => setForm(f => ({ ...f, date: val }))} 
+            required
+          />
+          <div style={{ marginBottom: 14 }}>
+            <label style={styles.fieldLabel}>Transaction Type</label>
+            <select value={form.type} onChange={set("type")} style={styles.input}>
+              <option value="in">Cash In</option>
+              <option value="out">Cash Out</option>
+            </select>
+          </div>
+          <Field
+            label="Description"
+            value={form.description} onChange={set("description")}
+            placeholder="Enter description" required
+          />
+          <SelectField
+            label="Category"
+            value={form.category} onChange={set("category")}
+            options={CATEGORIES} required
+          />
+          <Field
+            label="Amount (Rp)" type="number"
+            value={form.amount} onChange={set("amount")}
+            min="1" step="1" required
+          />
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+            <Btn variant="outline" onClick={close}>Cancel</Btn>
+            <Btn variant={form.type === "in" ? "success" : "danger"} onClick={handleAdd}>
+              Add Cash {form.type === "in" ? "In" : "Out"}
+            </Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

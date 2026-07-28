@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
-    /** 
+    /**
      * NOTES NIXON DARRELL, NOTES 2
      * Aturan validasi phone:
      * - WAJIB diawali "+" lalu kode negara (1-3 digit) lalu nomor lokal.
@@ -19,9 +19,15 @@ class SupplierController extends Controller
      */
     private const PHONE_REGEX = '/^\+[1-9]\d{7,14}$/';
 
-    public function index()
+    /**
+     * FIX multi-user: setiap query & mutasi di bawah ini di-scope ke
+     * $request->user()->id — supplier sekarang private per akun.
+     */
+    public function index(Request $request)
     {
-        return response()->json(Supplier::orderBy('name')->get());
+        return response()->json(
+            Supplier::where('user_id', $request->user()->id)->orderBy('name')->get()
+        );
     }
 
     public function store(Request $request)
@@ -36,13 +42,19 @@ class SupplierController extends Controller
             'phone.regex' => 'Format nomor telpon tidak valid. Harus diawali kode negara, contoh: +6281234567890.',
         ]);
 
+        $validated['user_id'] = $request->user()->id;
+
         $supplier = Supplier::create($validated);
         return response()->json($supplier, 201);
     }
 
     public function update(Request $request, $id)
     {
-        $supplier = Supplier::findOrFail($id);
+        // firstOrFail (bukan findOrFail) + where user_id: mencegah User B
+        // mengedit supplier milik User A hanya dengan menebak ID (IDOR).
+        $supplier = Supplier::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
 
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
@@ -58,11 +70,12 @@ class SupplierController extends Controller
         return response()->json($supplier);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        $supplier = Supplier::findOrFail($id);
+        $supplier = Supplier::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
 
-        // Cegah hapus supplier yang masih punya riwayat pembelian
         if ($supplier->purchases()->exists()) {
             return response()->json([
                 'message' => 'Supplier tidak bisa dihapus karena masih memiliki riwayat pembelian.'

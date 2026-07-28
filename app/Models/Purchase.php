@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Purchase extends Model
 {
     protected $fillable = [
-        'date', 'supplier_id', 'inventory_id',
+        'user_id', 'date', 'supplier_id', 'inventory_id',
         'quantity', 'unit_price', 'total_amount', 'description'
     ];
 
@@ -16,6 +16,11 @@ class Purchase extends Model
         'date'     => 'date',
         'quantity' => 'integer', // Input 1
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function supplier(): BelongsTo
     {

@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Inventory extends Model
 {
     protected $fillable = [
-        'item_id', 'product_name', 'category', 'unit_price',
+        'user_id', 'item_id', 'product_name', 'category', 'unit_price',
         'quantity', 'last_updated', 'notes'
     ];
 
@@ -17,6 +18,11 @@ class Inventory extends Model
         'quantity'     => 'integer',   // Input 1: INT, bukan decimal
         'unit_price'   => 'float',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function purchases(): HasMany
     {

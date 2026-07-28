@@ -4,6 +4,107 @@ import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
+// ── Helper tanggal ──────────────────────────────────────────────
+// Ambil tanggal hari ini dalam format ISO (yyyy-mm-dd) berdasarkan waktu lokal browser
+function todayIso() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Konversi yyyy-mm-dd -> dd-mm-yyyy untuk ditampilkan ke user
+function isoToDisplay(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "";
+  return `${d}-${m}-${y}`;
+}
+
+// ── Komponen Field Tanggal Terkunci ─────────────────────────────
+// - Value & display selalu = hari ini (backdate & forward date tidak diizinkan)
+// - Tampilan berupa text input readOnly berformat dd-mm-yyyy + icon kalender
+// - Native <input type="date"> disembunyikan sebagai overlay agar kalender bawaan
+//   browser tetap bisa dibuka, tapi min=max=hari ini sehingga tanggal lain terkunci
+function LockedDateField({ label = "Sale Date", value, onChange, required }) {
+  const today = todayIso();
+
+  // Auto-isi ke hari ini saat field pertama kali dirender jika masih kosong
+  useEffect(() => {
+    if (!value) onChange(today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const displayValue = isoToDisplay(value || today);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+        {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
+      </label>
+
+      <div style={{ position: "relative" }}>
+        {/* Tampilan visual: text readOnly format dd-mm-yyyy */}
+        <input
+          type="text"
+          readOnly
+          value={displayValue}
+          placeholder="dd-mm-yyyy"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "10px 36px 10px 12px",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            fontSize: 14,
+            color: "#111827",
+            background: "#f9fafb",
+            cursor: "pointer",
+          }}
+        />
+
+        {/* Icon kalender (dekoratif) */}
+        <span
+          style={{
+            position: "absolute",
+            right: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            fontSize: 16,
+          }}
+        >
+          📅
+        </span>
+
+        {/* Native date input, transparan, menutupi seluruh area agar kalender
+            bawaan browser tetap bisa dibuka saat diklik. min = max = hari ini
+            sehingga tanggal lain otomatis ter-disable oleh browser. */}
+        <input
+          type="date"
+          value={value || today}
+          min={today}
+          max={today}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            opacity: 0,
+            cursor: "pointer",
+          }}
+        />
+      </div>
+
+      <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+        Hanya tanggal hari ini yang bisa dipilih (tidak bisa backdate / forward date).
+      </p>
+    </div>
+  );
+}
+
 export default function PurchasesPage() {
   const { showNotif } = useNotif();
   const [data, setData]               = useState([]);
@@ -15,7 +116,7 @@ export default function PurchasesPage() {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
 
   const [form, setForm] = useState({
-    date: "", supplier_id: "", inventory_id: "", quantity: "", unit_price: ""
+    date: todayIso(), supplier_id: "", inventory_id: "", quantity: "", unit_price: ""
   });
   const [supplierForm, setSupplierForm] = useState({
     name: "", contact_person: "", phone: "", address: "", notes: ""
@@ -68,12 +169,17 @@ export default function PurchasesPage() {
       };
       const res = await apiFetch("/purchases", { method: "POST", body: JSON.stringify(payload) });
       setData(d => [res, ...d]);
+      
+       // Jaga-jaga: pastikan tanggal tetap hari ini (tidak bisa backdate / forward date)
+    if (form.date !== todayIso()) {
+      showNotif("Tanggal penjualan harus hari ini", "error"); return;
+    }
 
       // Stok inventory bertambah di BE — refresh data inventory lokal biar dropdown & qty akurat
       const freshInventory = await apiFetch("/inventory");
       setInventory(freshInventory);
 
-      setForm({ date: "", supplier_id: "", inventory_id: "", quantity: "", unit_price: "" });
+      setForm({ date: todayIso(), supplier_id: "", inventory_id: "", quantity: "", unit_price: "" });
       setShowModal(false);
       showNotif("Data pembelian berhasil ditambahkan");
     } catch (e) {
@@ -159,7 +265,12 @@ export default function PurchasesPage() {
       {/* Modal: Add Purchase */}
       {showModal && (
         <Modal title="Add Purchase" onClose={() => setShowModal(false)}>
-          <Field label="Transaction Date" type="date" value={form.date} onChange={set("date")} required />
+          <LockedDateField
+            label="Sale Date"
+            value={form.date}
+            onChange={(val) => setForm(f => ({ ...f, date: val }))}
+            required
+          />
 
           {suppliers.length === 0 ? (
             <div style={{

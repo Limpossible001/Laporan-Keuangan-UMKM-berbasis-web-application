@@ -4,6 +4,107 @@ import { useNotif } from "../contexts.jsx";
 import styles from "../styles.js";
 import { apiFetch } from "../api.js";
 
+// ── Helper tanggal ──────────────────────────────────────────────
+// Ambil tanggal hari ini dalam format ISO (yyyy-mm-dd) berdasarkan waktu lokal browser
+function todayIso() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Konversi yyyy-mm-dd -> dd-mm-yyyy untuk ditampilkan ke user
+function isoToDisplay(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "";
+  return `${d}-${m}-${y}`;
+}
+
+// ── Komponen Field Tanggal Terkunci ─────────────────────────────
+// - Value & display selalu = hari ini (backdate & forward date tidak diizinkan)
+// - Tampilan berupa text input readOnly berformat dd-mm-yyyy + icon kalender
+// - Native <input type="date"> disembunyikan sebagai overlay agar kalender bawaan
+//   browser tetap bisa dibuka, tapi min=max=hari ini sehingga tanggal lain terkunci
+function LockedDateField({ label = "Sale Date", value, onChange, required }) {
+  const today = todayIso();
+
+  // Auto-isi ke hari ini saat field pertama kali dirender jika masih kosong
+  useEffect(() => {
+    if (!value) onChange(today);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const displayValue = isoToDisplay(value || today);
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+        {label} {required && <span style={{ color: "#ef4444" }}>*</span>}
+      </label>
+
+      <div style={{ position: "relative" }}>
+        {/* Tampilan visual: text readOnly format dd-mm-yyyy */}
+        <input
+          type="text"
+          readOnly
+          value={displayValue}
+          placeholder="dd-mm-yyyy"
+          style={{
+            width: "100%",
+            boxSizing: "border-box",
+            padding: "10px 36px 10px 12px",
+            border: "1px solid #d1d5db",
+            borderRadius: 8,
+            fontSize: 14,
+            color: "#111827",
+            background: "#f9fafb",
+            cursor: "pointer",
+          }}
+        />
+
+        {/* Icon kalender (dekoratif) */}
+        <span
+          style={{
+            position: "absolute",
+            right: 12,
+            top: "50%",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            fontSize: 16,
+          }}
+        >
+          📅
+        </span>
+
+        {/* Native date input, transparan, menutupi seluruh area agar kalender
+            bawaan browser tetap bisa dibuka saat diklik. min = max = hari ini
+            sehingga tanggal lain otomatis ter-disable oleh browser. */}
+        <input
+          type="date"
+          value={value || today}
+          min={today}
+          max={today}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            opacity: 0,
+            cursor: "pointer",
+          }}
+        />
+      </div>
+
+      <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 4 }}>
+        Hanya tanggal hari ini yang bisa dipilih (tidak bisa backdate / forward date).
+      </p>
+    </div>
+  );
+}
+
 export default function SalesPage() {
   const { showNotif } = useNotif();
   const [data, setData]           = useState([]);
@@ -12,7 +113,7 @@ export default function SalesPage() {
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm]           = useState({
-    date: "", inventory_id: "", quantity: "", unit_price: "", customer_notes: ""
+    date: todayIso(), inventory_id: "", quantity: "", unit_price: "", customer_notes: ""
   });
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -58,6 +159,10 @@ export default function SalesPage() {
     if (Number(form.unit_price) <= 0) {
       showNotif("Harga satuan harus lebih dari 0", "error"); return;
     }
+    // Jaga-jaga: pastikan tanggal tetap hari ini (tidak bisa backdate / forward date)
+    if (form.date !== todayIso()) {
+      showNotif("Tanggal penjualan harus hari ini", "error"); return;
+    }
     // Validasi stok di sisi FE dulu untuk feedback cepat (BE tetap validasi ulang)
     if (selectedItem && Number(form.quantity) > Number(selectedItem.quantity)) {
       showNotif(`Stok tidak mencukupi. Stok tersedia: ${toQty(selectedItem.quantity)} unit`, "error"); return;
@@ -79,7 +184,7 @@ export default function SalesPage() {
       const freshInventory = await apiFetch("/inventory");
       setInventory(freshInventory);
 
-      setForm({ date: "", inventory_id: "", quantity: "", unit_price: "", customer_notes: "" });
+      setForm({ date: todayIso(), inventory_id: "", quantity: "", unit_price: "", customer_notes: "" });
       setShowModal(false);
       showNotif("Data penjualan berhasil ditambahkan");
     } catch (e) {
@@ -136,7 +241,12 @@ export default function SalesPage() {
 
       {showModal && (
         <Modal title="Add Sale" onClose={() => setShowModal(false)}>
-          <Field label="Sale Date" type="date" value={form.date} onChange={set("date")} required />
+          <LockedDateField
+            label="Sale Date"
+            value={form.date}
+            onChange={(val) => setForm(f => ({ ...f, date: val }))}
+            required
+          />
 
           {inventory.length === 0 ? (
             <div style={{

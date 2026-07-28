@@ -8,16 +8,48 @@ import { apiFetch } from "./api.js";
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser]             = useState(null);
+  const [user, setUser]               = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser  = localStorage.getItem("umkm_user");
-    const storedToken = localStorage.getItem("umkm_token");
-    if (storedUser && storedToken) {
-      try { setUser(JSON.parse(storedUser)); } catch { /* invalid JSON */ }
-    }
-    setAuthLoading(false);
+    (async () => {
+      const storedUser  = localStorage.getItem("umkm_user");
+      const storedToken = localStorage.getItem("umkm_token");
+
+      if (storedUser && storedToken) {
+        // Token "local" adalah sisa mock lama (pre-Sanctum) — tidak perlu
+        // divalidasi ke server, langsung percaya cache seperti sebelumnya.
+        if (storedToken === "local") {
+          try { setUser(JSON.parse(storedUser)); } catch { /* invalid JSON */ }
+          setAuthLoading(false);
+          return;
+        }
+
+        // FIX: validasi token ke backend (GET /auth/me) sebelum mempercayai
+        // cache lokal. Sebelumnya, app langsung setUser() dari localStorage
+        // tanpa cek apakah token itu masih valid di server — akibatnya:
+        //   1) Restart dev server / restart browser lama bisa "auto-login"
+        //      pakai token basi (misal setelah migrate:fresh di backend),
+        //      dan app lompat ke Dashboard alih-alih Login.
+        //   2) Kalau token sudah di-revoke tapi belum expired secara UI,
+        //      user tetap melihat data cache lama tanpa disadari sesinya
+        //      sebenarnya sudah tidak sah di server.
+        try {
+          const data = await apiFetch("/auth/me");
+          setUser(data.user);
+          // Sinkronkan cache lokal dengan data terbaru dari server
+          localStorage.setItem("umkm_user", JSON.stringify(data.user));
+        } catch {
+          // Token invalid/expired di server — bersihkan cache lokal sepenuhnya,
+          // App.jsx akan otomatis redirect ke halaman Login.
+          localStorage.removeItem("umkm_user");
+          localStorage.removeItem("umkm_token");
+          setUser(null);
+        }
+      }
+
+      setAuthLoading(false);
+    })();
   }, []);
 
   // login sekarang terima userData + token (siap untuk Sanctum)

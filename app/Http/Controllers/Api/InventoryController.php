@@ -8,17 +8,21 @@ use Illuminate\Http\Request;
 
 class InventoryController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return response()->json(
-            Inventory::orderBy('item_id')->get()
+            Inventory::where('user_id', $request->user()->id)->orderBy('item_id')->get()
         );
     }
 
     /**
      * Input 4: Upsert logic.
-     * - Jika item_id sudah ada → tambahkan quantity ke stok yang ada (restock).
-     * - Jika item_id baru → buat record baru.
+     * - Jika item_id sudah ada MILIK USER INI → tambahkan quantity (restock).
+     * - Jika item_id baru (untuk user ini) → buat record baru.
+     *
+     * FIX multi-user: item_id sekarang unik PER USER, bukan global.
+     * Sebelumnya Inventory::where('item_id', ...) tanpa filter user_id
+     * membuat item_id user manapun bisa "restock" ke item_id milik user lain.
      */
     public function store(Request $request)
     {
@@ -27,14 +31,17 @@ class InventoryController extends Controller
             'product_name' => 'required|string|max:255',
             'category'     => 'nullable|string|max:100',
             'unit_price'   => 'required|numeric|min:1',
-            'quantity'     => 'required|integer|min:1',  // Input 1: integer
+            'quantity'     => 'required|integer|min:1',
             'notes'        => 'nullable|string',
         ]);
 
-        $existing = Inventory::where('item_id', $request->item_id)->first();
+        $userId = $request->user()->id;
+
+        $existing = Inventory::where('item_id', $request->item_id)
+            ->where('user_id', $userId)
+            ->first();
 
         if ($existing) {
-            // item_id sudah ada → tambahkan stok (upsert/restock)
             $existing->update([
                 'quantity'     => $existing->quantity + (int) $request->quantity,
                 'last_updated' => now(),
@@ -46,8 +53,8 @@ class InventoryController extends Controller
             ], 200);
         }
 
-        // item_id baru → buat record baru
         $item = Inventory::create([
+            'user_id'      => $userId,
             'item_id'      => (int) $request->item_id,
             'product_name' => $request->product_name,
             'category'     => $request->category,
@@ -66,13 +73,15 @@ class InventoryController extends Controller
 
     public function update(Request $request, $id)
     {
-        $item = Inventory::findOrFail($id);
+        $item = Inventory::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
 
         $request->validate([
             'product_name' => 'required|string|max:255',
             'category'     => 'nullable|string|max:100',
             'unit_price'   => 'required|numeric|min:1',
-            'quantity'     => 'required|integer|min:0', // Input 1: integer
+            'quantity'     => 'required|integer|min:0',
             'notes'        => 'nullable|string',
         ]);
 
@@ -90,10 +99,12 @@ class InventoryController extends Controller
 
     public function adjustStock(Request $request, $id)
     {
-        $item = Inventory::findOrFail($id);
+        $item = Inventory::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
 
         $request->validate([
-            'adjustment' => 'required|integer|not_in:0', // Input 1: integer
+            'adjustment' => 'required|integer|not_in:0',
             'notes'      => 'nullable|string',
         ]);
 
@@ -114,9 +125,13 @@ class InventoryController extends Controller
         return response()->json($item->fresh());
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        Inventory::findOrFail($id)->delete();
+        Inventory::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail()
+            ->delete();
+
         return response()->json(['message' => 'Deleted successfully']);
     }
 }

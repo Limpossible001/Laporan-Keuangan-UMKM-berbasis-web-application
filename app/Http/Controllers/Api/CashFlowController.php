@@ -8,9 +8,11 @@ use Illuminate\Http\Request;
 
 class CashFlowController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json(CashFlow::orderBy('date', 'desc')->get());
+        return response()->json(
+            CashFlow::where('user_id', $request->user()->id)->orderBy('date', 'desc')->get()
+        );
     }
 
     public function store(Request $request)
@@ -23,13 +25,17 @@ class CashFlowController extends Controller
             'category'    => 'required|string',
         ]);
 
+        $validated['user_id'] = $request->user()->id;
+
         $cashFlow = CashFlow::create($validated);
         return response()->json($cashFlow, 201);
     }
 
     public function update(Request $request, $id)
     {
-        $cashFlow = CashFlow::findOrFail($id);
+        $cashFlow = CashFlow::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail();
 
         $validated = $request->validate([
             'date'        => 'required|date',
@@ -43,16 +49,22 @@ class CashFlowController extends Controller
         return response()->json($cashFlow);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        CashFlow::findOrFail($id)->delete();
+        CashFlow::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail()
+            ->delete();
+
         return response()->json(['message' => 'Deleted successfully']);
     }
 
-    public function summary()
+    public function summary(Request $request)
     {
-        $cashIn  = CashFlow::where('type', 'in')->sum('amount');
-        $cashOut = CashFlow::where('type', 'out')->sum('amount');
+        $userId = $request->user()->id;
+
+        $cashIn  = CashFlow::where('user_id', $userId)->where('type', 'in')->sum('amount');
+        $cashOut = CashFlow::where('user_id', $userId)->where('type', 'out')->sum('amount');
 
         return response()->json([
             'cash_in'       => $cashIn,

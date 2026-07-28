@@ -421,11 +421,11 @@ export function PaginationBar({ page, totalPages, onPageChange }) {
 
 const NAV_ITEMS = [
   { path: "/dashboard",    label: "Dashboard",       icon: DashboardIcon },
-  { path: "/purchases",    label: "Input Pembelian", icon: PurchaseIcon  },
   { path: "/suppliers",    label: "Suppliers",       icon: SupplierIcon  },
-  { path: "/sales",        label: "Input Penjualan", icon: SalesIcon     },
-  { path: "/cashflow",     label: "Input Kas",       icon: CashIcon      },
+  { path: "/purchases",    label: "Input Pembelian", icon: PurchaseIcon  },
   { path: "/inventory",    label: "Input Inventory", icon: InventoryIcon },
+  { path: "/sales",        label: "Input Penjualan", icon: SalesIcon     },
+  { path: "/cashflow",     label: "Rekap Kas",       icon: CashIcon      },
   { path: "/reports",      label: "Reports",         icon: ReportsIcon   },
   { path: "/activity-log", label: "Activity Log",    icon: ActivityIcon  },
   { path: "/panduan",      label: "Panduan",         icon: PanduanIcon   },
@@ -436,7 +436,7 @@ const PAGE_TITLES = {
   "/purchases":    "Input Pembelian",
   "/suppliers":    "Suppliers",
   "/sales":        "Input Penjualan",
-  "/cashflow":     "Input Kas",
+  "/cashflow":     "Rekap Kas",
   "/inventory":    "Input Inventory",
   "/reports":      "Reports",
   "/activity-log": "Activity Log",
@@ -595,7 +595,7 @@ export function SidebarLayout({ children, currentPath, navigate }) {
                   <span>Settings</span>
                 </button>
 
-                {/* 🚪 Logout */}
+                {/* ❗ Logout */}
                 <button
                   onClick={handleLogout}
                   style={{
@@ -608,7 +608,7 @@ export function SidebarLayout({ children, currentPath, navigate }) {
                   onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
                   onMouseLeave={e => e.currentTarget.style.background = "none"}
                 >
-                  <span style={{ fontSize: 15 }}>🚪</span>
+                  <span style={{ fontSize: 15 }}>❗</span>
                   <span>Logout</span>
                 </button>
               </div>

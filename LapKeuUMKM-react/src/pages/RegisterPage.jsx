@@ -52,7 +52,7 @@ export default function RegisterPage({ navigate }) {
           <p style={{ color: "#6b7280", fontSize: 14, margin: 0 }}>Start managing your finances in minutes</p>
         </div>
 
-        <Field label="Full Name"            value={form.name}     onChange={set("name")}     placeholder="John Doe"              required />
+        <Field label="Full Name"            value={form.name}     onChange={set("name")}     placeholder="Your full name"              required />
         <Field label="Email Address" type="email" value={form.email} onChange={set("email")} placeholder="your.email@example.com" required />
         <Field label="Password"      type="password" value={form.password} onChange={set("password")} placeholder="At least 8 characters" required />
         <Field label="Confirm Password" type="password" value={form.confirm} onChange={set("confirm")} placeholder="Repeat your password" required />

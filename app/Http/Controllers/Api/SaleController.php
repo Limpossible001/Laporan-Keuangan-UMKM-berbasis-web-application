@@ -6,28 +6,42 @@ use App\Http\Controllers\Controller;
 use App\Models\Sale;
 use App\Models\Inventory;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SaleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return response()->json(
-            Sale::with('inventory')->orderBy('date', 'desc')->get()
+            Sale::with('inventory')
+                ->where('user_id', $request->user()->id)
+                ->orderBy('date', 'desc')
+                ->get()
         );
     }
 
     public function store(Request $request)
     {
+        $userId = $request->user()->id;
+
         $validated = $request->validate([
-            'date'           => 'required|date',
-            'inventory_id'   => 'required|exists:inventories,id',
+            'date'         => 'required|date',
+            // FIX: inventory_id harus ada DAN milik user yang sedang login —
+            // sebelumnya exists:inventories,id saja, jadi User B bisa kirim
+            // inventory_id milik User A dan lolos validasi.
+            'inventory_id' => [
+                'required',
+                Rule::exists('inventories', 'id')->where('user_id', $userId),
+            ],
             'quantity'       => 'required|integer|min:1',
             'unit_price'     => 'required|numeric|min:1',
             'total_revenue'  => 'required|numeric|min:0',
             'customer_notes' => 'nullable|string',
         ]);
 
-        $inventoryItem = Inventory::findOrFail($validated['inventory_id']);
+        $inventoryItem = Inventory::where('id', $validated['inventory_id'])
+            ->where('user_id', $userId)
+            ->firstOrFail();
 
         if ($inventoryItem->quantity < $validated['quantity']) {
             return response()->json([
@@ -35,11 +49,10 @@ class SaleController extends Controller
             ], 422);
         }
 
-        // Kurangi stok inventory
         $inventoryItem->decrement('quantity', $validated['quantity']);
         $inventoryItem->update(['last_updated' => now()]);
 
-        // Simpan data penjualan
+        $validated['user_id'] = $userId;
         $sale = Sale::create($validated);
 
         return response()->json($sale->load('inventory'), 201);
@@ -47,11 +60,16 @@ class SaleController extends Controller
 
     public function update(Request $request, $id)
     {
-        $sale = Sale::findOrFail($id);
+        $userId = $request->user()->id;
+
+        $sale = Sale::where('id', $id)->where('user_id', $userId)->firstOrFail();
 
         $validated = $request->validate([
-            'date'           => 'required|date',
-            'inventory_id'   => 'required|exists:inventories,id',
+            'date'         => 'required|date',
+            'inventory_id' => [
+                'required',
+                Rule::exists('inventories', 'id')->where('user_id', $userId),
+            ],
             'quantity'       => 'required|integer|min:1',
             'unit_price'     => 'required|numeric|min:1',
             'total_revenue'  => 'required|numeric|min:1',
@@ -64,9 +82,13 @@ class SaleController extends Controller
         return response()->json($sale->load('inventory'));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        Sale::findOrFail($id)->delete();
+        Sale::where('id', $id)
+            ->where('user_id', $request->user()->id)
+            ->firstOrFail()
+            ->delete();
+
         return response()->json(['message' => 'Deleted successfully']);
     }
 }

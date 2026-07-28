@@ -7,10 +7,13 @@ use App\Models\ActivityLog;
 
 class ActivityLogController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         return response()->json(
-            ActivityLog::with('user')->orderBy('logged_at', 'desc')->limit(200)->get()
+            ActivityLog::where('user_id', $request->user()->id)
+                ->orderBy('logged_at', 'desc')
+                ->limit(200)
+                ->get()
         );
     }
 }

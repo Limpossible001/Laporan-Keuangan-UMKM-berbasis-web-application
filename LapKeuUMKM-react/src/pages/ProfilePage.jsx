@@ -120,86 +120,113 @@ export default function ProfilePage() {
 
   const currentPhoto = avatarPreview || initial?.avatar_url;
 
-  return (
-    <div style={{ maxWidth: 560 }}>
+return (
+    <div style={{ 
+      width: "100%", 
+      maxWidth: "768px", // Diperlebar agar tidak terlalu sempit, tapi tidak terlalu lebar untuk form
+      margin: "40px auto", // Memusatkan card di tengah layar dengan jarak atas
+      fontFamily: "'Inter', 'Segoe UI', sans-serif", // Font minimalis dan modern
+      color: "#111827"
+    }}>
 
       {/* ── Card 1: Profile Settings ──────────────────────── */}
-      <div style={styles.card}>
-        <h3 style={{ ...styles.cardTitle, fontSize: 18, marginBottom: 20 }}>Profile Settings</h3>
+      <div style={{
+        ...styles.card,
+        padding: "32px", // Menambah ruang napas (padding) di dalam card
+        borderRadius: "12px",
+        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)" // Shadow yang lebih soft
+      }}>
+        <h3 style={{ 
+          ...styles.cardTitle, 
+          fontSize: 20, 
+          fontWeight: 600, 
+          marginBottom: 28,
+          borderBottom: "1px solid #f3f4f6", // Garis pemisah halus
+          paddingBottom: "12px"
+        }}>
+          Profile Settings
+        </h3>
 
         {/* Profile Picture */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 22 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 32 }}>
           <div style={{
-            width: 64, height: 64, borderRadius: "50%", background: "#4F46E5",
+            width: 72, height: 72, borderRadius: "50%", background: "#4F46E5",
             display: "flex", alignItems: "center", justifyContent: "center",
             overflow: "hidden", flexShrink: 0,
+            boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
           }}>
             {currentPhoto
               ? <img src={currentPhoto} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <span style={{ color: "#fff", fontSize: 24 }}>👤</span>
+              : <span style={{ color: "#fff", fontSize: 28 }}>👤</span>
             }
           </div>
           <div>
-            <Btn variant="outline" size="sm" onClick={handlePickPhoto}>Change Photo</Btn>
+            <Btn variant="outline" size="sm" onClick={handlePickPhoto} style={{ borderRadius: "6px" }}>
+              Change Photo
+            </Btn>
             <input
               ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png"
               onChange={handlePhotoChange} style={{ display: "none" }}
             />
-            <p style={{ fontSize: 12, color: "#9ca3af", margin: "6px 0 0" }}>JPG, PNG · Maks. 2 MB</p>
+            <p style={{ fontSize: 13, color: "#6b7280", margin: "8px 0 0" }}>JPG, PNG · Maks. 2 MB</p>
           </div>
         </div>
 
-        <Field label="Full Name"      value={form.name}          onChange={set("name")}          placeholder="John Doe"                  required />
-        <Field label="Business Name"  value={form.business_name} onChange={set("business_name")} placeholder="UMKM Business Solutions"    required />
-        <Field label="Email Address"  type="email" value={form.email} onChange={set("email")}    placeholder="john.doe@business.com"      required />
+        {/* Form Fields dengan spacing yang sedikit diperlebar */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Field label="Full Name"      value={form.name}          onChange={set("name")}          placeholder="John Doe"                  required />
+          <Field label="Business Name"  value={form.business_name} onChange={set("business_name")} placeholder="UMKM Business Solutions"    required />
+          <Field label="Email Address"  type="email" value={form.email} onChange={set("email")}    placeholder="john.doe@business.com"      required />
+        </div>
 
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <Btn variant="outline" onClick={handleReset} disabled={saving}>Reset</Btn>
-          <Btn onClick={handleSave} disabled={saving}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 32 }}>
+          <Btn variant="outline" onClick={handleReset} disabled={saving} style={{ borderRadius: "6px" }}>Reset</Btn>
+          <Btn onClick={handleSave} disabled={saving} style={{ borderRadius: "6px" }}>
             {saving ? "Menyimpan…" : "💾 Save Changes"}
           </Btn>
         </div>
       </div>
 
-      {/* ── Card 2: Sesi Aktif / Logout (Catatan 3) ─────── */}
+      {/* ── Card 2: Sesi Aktif / Logout ─────── */}
       <div style={{
         ...styles.card,
-        marginTop: 16,
+        marginTop: 24,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 16,
-        borderLeft: "3px solid #fee2e2",
-        padding: "16px 20px",
+        borderLeft: "4px solid #4F46E5",
+        padding: "20px 24px",
+        borderRadius: "12px",
+        boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.1)"
       }}>
         <div>
-          <p style={{ fontSize: 14, fontWeight: 600, color: "#374151", margin: "0 0 4px" }}>
+          <p style={{ fontSize: 15, fontWeight: 600, color: "#111827", margin: "0 0 4px" }}>
             Sesi Aktif
           </p>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>
+          <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
             Login sebagai{" "}
             <strong style={{ color: "#374151" }}>{user?.email ?? "—"}</strong>
           </p>
         </div>
 
-        {/* Tombol Logout — outlined merah, minimalis */}
         <button
           onClick={handleLogout}
           disabled={loggingOut}
           style={{
             display: "flex", alignItems: "center", gap: 8,
-            padding: "8px 20px", borderRadius: 8,
-            border: "1.5px solid #ef4444", background: "none",
+            padding: "8px 20px", borderRadius: "6px",
+            border: "1px solid #ef4444", background: "none",
             color: "#ef4444", fontSize: 14, fontWeight: 600,
             cursor: loggingOut ? "not-allowed" : "pointer",
             opacity: loggingOut ? 0.6 : 1,
             whiteSpace: "nowrap", flexShrink: 0,
-            transition: "background .15s, color .15s",
+            transition: "all .2s ease",
           }}
-          onMouseEnter={e => { if (!loggingOut) { e.currentTarget.style.background = "#fef2f2"; } }}
-          onMouseLeave={e => { e.currentTarget.style.background = "none"; }}
+          onMouseEnter={e => { if (!loggingOut) { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#dc2626"; } }}
+          onMouseLeave={e => { e.currentTarget.style.background = "none"; e.currentTarget.style.borderColor = "#ef4444"; }}
         >
-          🚪 {loggingOut ? "Keluar…" : "Logout"}
+          {loggingOut ? "Keluar…" : "Logout"}
         </button>
       </div>
 
