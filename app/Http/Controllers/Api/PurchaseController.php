@@ -45,12 +45,19 @@ class PurchaseController extends Controller
         $validated['user_id'] = $userId;
         $purchase = Purchase::create($validated);
 
-        // Pembelian = stok bertambah (kebalikan dari Sale yang mengurangi stok)
+        // Pembelian = SATU-SATUNYA sumber perubahan stok & nilai inventori:
+        // - stok bertambah (kebalikan dari Sale yang mengurangi stok)
+        // - unit_price inventori di-update ke harga pembelian terbaru, karena
+        //   Add Inventory tidak lagi mengisi unit_price (defaultnya 0 saat
+        //   item baru pertama kali didata)
         $inventoryItem = Inventory::where('id', $validated['inventory_id'])
             ->where('user_id', $userId)
             ->firstOrFail();
         $inventoryItem->increment('quantity', $validated['quantity']);
-        $inventoryItem->update(['last_updated' => now()]);
+        $inventoryItem->update([
+            'unit_price'   => $validated['unit_price'],
+            'last_updated' => now(),
+        ]);
 
         return response()->json($purchase->load(['supplier', 'inventory']), 201);
     }

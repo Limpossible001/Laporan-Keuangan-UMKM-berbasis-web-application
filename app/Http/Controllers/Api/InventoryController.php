@@ -16,13 +16,17 @@ class InventoryController extends Controller
     }
 
     /**
-     * Input 4: Upsert logic.
-     * - Jika item_id sudah ada MILIK USER INI → tambahkan quantity (restock).
-     * - Jika item_id baru (untuk user ini) → buat record baru.
+     * Add Inventory = PENDATAAN saja (master data item), BUKAN transaksi stok/nilai.
      *
-     * FIX multi-user: item_id sekarang unik PER USER, bukan global.
-     * Sebelumnya Inventory::where('item_id', ...) tanpa filter user_id
-     * membuat item_id user manapun bisa "restock" ke item_id milik user lain.
+     * Perubahan (pemisahan tanggung jawab dgn Add Purchase):
+     * - Tidak lagi menerima/menyimpan unit_price & quantity dari form ini.
+     *   Item baru selalu mulai dari quantity=0, unit_price=0.
+     * - Tidak ada lagi logic upsert/restock di sini. Jika item_id sudah
+     *   terdaftar milik user ini, request DITOLAK (422) — restock/penambahan
+     *   stok & nilai HARUS lewat halaman Input Pembelian (PurchaseController).
+     *
+     * item_id tetap unik PER USER (bukan global) — lihat migration
+     * fix_inventories_item_id_unique_per_user.
      */
     public function store(Request $request)
     {
@@ -30,8 +34,6 @@ class InventoryController extends Controller
             'item_id'      => 'required|integer|min:1',
             'product_name' => 'required|string|max:255',
             'category'     => 'nullable|string|max:100',
-            'unit_price'   => 'required|numeric|min:1',
-            'quantity'     => 'required|integer|min:1',
             'notes'        => 'nullable|string',
         ]);
 
@@ -42,15 +44,10 @@ class InventoryController extends Controller
             ->first();
 
         if ($existing) {
-            $existing->update([
-                'quantity'     => $existing->quantity + (int) $request->quantity,
-                'last_updated' => now(),
-            ]);
             return response()->json([
-                'item'    => $existing->fresh(),
-                'action'  => 'updated',
-                'message' => "Stok {$existing->product_name} berhasil ditambahkan.",
-            ], 200);
+                'message' => "ID Item {$request->item_id} sudah dipakai untuk \"{$existing->product_name}\". "
+                    . 'Gunakan ID lain, atau tambah stok item ini lewat menu Input Pembelian.',
+            ], 422);
         }
 
         $item = Inventory::create([
@@ -58,8 +55,8 @@ class InventoryController extends Controller
             'item_id'      => (int) $request->item_id,
             'product_name' => $request->product_name,
             'category'     => $request->category,
-            'unit_price'   => $request->unit_price,
-            'quantity'     => (int) $request->quantity,
+            'unit_price'   => 0,
+            'quantity'     => 0,
             'notes'        => $request->notes,
             'last_updated' => now(),
         ]);
@@ -67,10 +64,16 @@ class InventoryController extends Controller
         return response()->json([
             'item'    => $item,
             'action'  => 'created',
-            'message' => "Item baru {$item->product_name} berhasil ditambahkan.",
+            'message' => "Item baru {$item->product_name} berhasil didata. Tambahkan stok & nilai lewat Input Pembelian.",
         ], 201);
     }
 
+    /**
+     * Edit HANYA field pendataan (product_name, category, notes).
+     * quantity & unit_price sengaja tidak bisa diedit dari sini —
+     * keduanya hanya berubah lewat Add Purchase (nilai) atau
+     * adjustStock (koreksi stok manual, mis. barang rusak/hilang).
+     */
     public function update(Request $request, $id)
     {
         $item = Inventory::where('id', $id)
@@ -80,18 +83,13 @@ class InventoryController extends Controller
         $request->validate([
             'product_name' => 'required|string|max:255',
             'category'     => 'nullable|string|max:100',
-            'unit_price'   => 'required|numeric|min:1',
-            'quantity'     => 'required|integer|min:0',
             'notes'        => 'nullable|string',
         ]);
 
         $item->update([
             'product_name' => $request->product_name,
             'category'     => $request->category,
-            'unit_price'   => $request->unit_price,
-            'quantity'     => (int) $request->quantity,
             'notes'        => $request->notes,
-            'last_updated' => now(),
         ]);
 
         return response()->json($item->fresh());

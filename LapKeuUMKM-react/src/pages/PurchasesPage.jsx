@@ -116,7 +116,7 @@ export default function PurchasesPage() {
   const [showSupplierModal, setShowSupplierModal] = useState(false);
 
   const [form, setForm] = useState({
-    date: todayIso(), supplier_id: "", inventory_id: "", quantity: "", unit_price: ""
+    date: todayIso(), supplier_id: "", inventory_id: "", quantity: "", unit_price: "", notes: ""
   });
   const [supplierForm, setSupplierForm] = useState({
     name: "", contact_person: "", phone: "", address: "", notes: ""
@@ -166,6 +166,7 @@ export default function PurchasesPage() {
         quantity: Number(form.quantity),
         unit_price: Number(form.unit_price),
         total_amount: Number(form.quantity) * Number(form.unit_price),
+        description: form.notes || null,
       };
       const res = await apiFetch("/purchases", { method: "POST", body: JSON.stringify(payload) });
       setData(d => [res, ...d]);
@@ -179,7 +180,7 @@ export default function PurchasesPage() {
       const freshInventory = await apiFetch("/inventory");
       setInventory(freshInventory);
 
-      setForm({ date: todayIso(), supplier_id: "", inventory_id: "", quantity: "", unit_price: "" });
+      setForm({ date: todayIso(), supplier_id: "", inventory_id: "", quantity: "", unit_price: "", notes: "" });
       setShowModal(false);
       showNotif("Data pembelian berhasil ditambahkan");
     } catch (e) {
@@ -231,9 +232,9 @@ export default function PurchasesPage() {
   return (
     <div>
       <div style={styles.statsRow}>
-        <StatCard label="TOTAL PURCHASES"  value={data.length}       subtitle="Total records" />
-        <StatCard label="TOTAL AMOUNT"     value={toRp(totalAmount)} subtitle="All time purchases" />
-        <StatCard label="AVERAGE PURCHASE" value={toRp(avgPurchase)} subtitle="Per transaction" accent />
+        <StatCard label="JUMLAH TRANSAKSI (TOTAL PURCHASES)"  value={data.length}       subtitle="Total records" />
+        <StatCard label="(TOTAL AMOUNT)"     value={toRp(totalAmount)} subtitle="All time purchases" />
+        <StatCard label="RATA-RATA NILAI TRANSAKSI (AVERAGE PURCHASE)" value={toRp(avgPurchase)} subtitle="Per transaction" accent />
       </div>
 
       <div style={styles.card}>
@@ -314,6 +315,8 @@ export default function PurchasesPage() {
               Total: <strong>{toRp(Number(form.quantity) * Number(form.unit_price))}</strong>
             </div>
           )}
+
+          <Field label="Notes (Opsional)" value={form.notes} onChange={set("notes")} placeholder="Catatan tambahan" />
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
             <Btn variant="outline" onClick={() => setShowModal(false)}>Cancel</Btn>
