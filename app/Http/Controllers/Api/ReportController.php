@@ -63,6 +63,14 @@ class ReportController extends Controller
      * Hitung Laba Rugi: Income (Sales) - COGS (Purchases) - OpEx (CashFlow keluar)
      * FIX: tambah parameter $userId — sebelumnya laporan siapa pun menghitung
      * SEMUA transaksi di database, bukan cuma milik user yang login.
+     *
+     * Tahap 3: sejak Input Pembelian otomatis membuat entry Cash Flow
+     * (Kas Keluar, Category Pembelian) supaya tampil di CashFlowPage,
+     * OpEx di sini WAJIB mengecualikan entry yang source_type-nya 'purchase'.
+     * Kalau tidak, nilai pembelian akan terhitung DUA KALI: sekali lewat
+     * $cogs (dari tabel purchases) dan sekali lagi lewat $opEx (dari
+     * cash_flows) — sehingga Net Profit jadi salah (lebih rendah dari
+     * seharusnya).
      */
     public function buildProfitLoss(int $userId, Carbon $from, Carbon $to): array
     {
@@ -71,7 +79,15 @@ class ReportController extends Controller
         $cogs        = (float) Purchase::where('user_id', $userId)
             ->whereBetween('date', [$from, $to])->sum('total_amount');
         $opEx        = (float) CashFlow::where('user_id', $userId)
-            ->whereBetween('date', [$from, $to])->where('type', 'out')->sum('amount');
+            ->whereBetween('date', [$from, $to])
+            ->where('type', 'out')
+            // Tahap 3: kecualikan entry otomatis dari Pembelian — sudah
+            // terhitung lewat $cogs di atas, jangan dihitung dua kali di sini.
+            ->where(function ($q) {
+                $q->whereNull('source_type')
+                  ->orWhere('source_type', '!=', CashFlow::SOURCE_PURCHASE);
+            })
+            ->sum('amount');
 
         $totalExpenses = $cogs + $opEx;
         $netProfit     = $totalIncome - $totalExpenses;
@@ -89,6 +105,12 @@ class ReportController extends Controller
 
     /**
      * Detail Arus Kas (murni dari tabel cash_flows, sesuai UI ReportCashFlow yang sudah ada)
+     *
+     * Tahap 3: TIDAK perlu filter source_type di sini — Ringkasan Arus Kas
+     * memang harus menampilkan SEMUA kas masuk & keluar, termasuk yang
+     * otomatis berasal dari Input Pembelian (Kas Keluar) & Input Penjualan
+     * (Kas Masuk). Filter source_type hanya relevan di buildProfitLoss()
+     * untuk menghindari double counting COGS.
      */
     public function buildCashFlow(int $userId, Carbon $from, Carbon $to): array
     {

@@ -37,6 +37,17 @@ class CashFlowController extends Controller
             ->where('user_id', $request->user()->id)
             ->firstOrFail();
 
+        // Tahap 3: entry yang otomatis tersinkron dari Input Pembelian /
+        // Input Penjualan tidak boleh diedit langsung dari sini, supaya
+        // Cash Flow Records & Ringkasan Arus Kas tidak "menyimpang" dari
+        // data transaksi aslinya. Edit harus lewat halaman Pembelian/Penjualan.
+        if ($cashFlow->source_type) {
+            return response()->json([
+                'message' => 'Entry ini dibuat otomatis dari ' . $this->sourceLabel($cashFlow->source_type)
+                    . '. Silakan ubah datanya melalui halaman tersebut.',
+            ], 422);
+        }
+
         $validated = $request->validate([
             'date'        => 'required|date',
             'type'        => 'required|in:in,out',
@@ -51,10 +62,21 @@ class CashFlowController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        CashFlow::where('id', $id)
+        $cashFlow = CashFlow::where('id', $id)
             ->where('user_id', $request->user()->id)
-            ->firstOrFail()
-            ->delete();
+            ->firstOrFail();
+
+        // Tahap 3: sama seperti update — mencegah entry otomatis dihapus
+        // sepihak dari Cash Flow Records tanpa menghapus transaksi aslinya,
+        // agar rekap kas & laporan tetap konsisten.
+        if ($cashFlow->source_type) {
+            return response()->json([
+                'message' => 'Entry ini dibuat otomatis dari ' . $this->sourceLabel($cashFlow->source_type)
+                    . '. Hapus datanya melalui halaman tersebut agar rekap kas tetap konsisten.',
+            ], 422);
+        }
+
+        $cashFlow->delete();
 
         return response()->json(['message' => 'Deleted successfully']);
     }
@@ -71,5 +93,14 @@ class CashFlowController extends Controller
             'cash_out'      => $cashOut,
             'net_cash_flow' => $cashIn - $cashOut,
         ]);
+    }
+
+    private function sourceLabel(string $sourceType): string
+    {
+        return match ($sourceType) {
+            'purchase' => 'Input Pembelian',
+            'sale'     => 'Input Penjualan',
+            default    => 'modul lain',
+        };
     }
 }

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Sale;
 use App\Models\Inventory;
+use App\Models\CashFlow;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class SaleController extends Controller
@@ -49,11 +51,23 @@ class SaleController extends Controller
             ], 422);
         }
 
-        $inventoryItem->decrement('quantity', $validated['quantity']);
-        $inventoryItem->update(['last_updated' => now()]);
-
         $validated['user_id'] = $userId;
-        $sale = Sale::create($validated);
+
+        // Tahap 3: bungkus dalam transaksi DB karena sekarang menyentuh 3 tabel
+        // sekaligus (sales, inventories, cash_flows).
+        $sale = DB::transaction(function () use ($validated, $inventoryItem) {
+            $inventoryItem->decrement('quantity', $validated['quantity']);
+            $inventoryItem->update(['last_updated' => now()]);
+
+            $sale = Sale::create($validated);
+
+            // Tahap 3: setiap Input Penjualan otomatis tercatat sebagai
+            // Kas Masuk, Category "Penjualan" di Cash Flow Records &
+            // Ringkasan Arus Kas — tidak perlu input manual lagi di CashFlowPage.
+            $this->syncCashFlow($sale);
+
+            return $sale;
+        });
 
         return response()->json($sale->load('inventory'), 201);
     }
@@ -78,17 +92,65 @@ class SaleController extends Controller
 
         // Catatan: sama seperti Purchase, penyesuaian stok akibat edit
         // TIDAK ditangani di v4.0 ini — direkomendasikan dibahas di Tahap berikutnya.
-        $sale->update($validated);
+        DB::transaction(function () use ($sale, $validated) {
+            $sale->update($validated);
+
+            // Tahap 3: sinkronkan ulang entry Cash Flow terkait supaya
+            // tanggal/jumlah di Ringkasan Arus Kas tetap sama dengan Sale.
+            $this->syncCashFlow($sale->fresh());
+        });
+
         return response()->json($sale->load('inventory'));
     }
 
     public function destroy(Request $request, $id)
     {
-        Sale::where('id', $id)
+        $sale = Sale::where('id', $id)
             ->where('user_id', $request->user()->id)
-            ->firstOrFail()
-            ->delete();
+            ->firstOrFail();
+
+        DB::transaction(function () use ($sale) {
+            // Tahap 3: hapus juga entry Cash Flow otomatis yang terkait,
+            // supaya tidak ada Kas Masuk "hantu" tanpa transaksi aslinya.
+            CashFlow::where('source_type', CashFlow::SOURCE_SALE)
+                ->where('source_id', $sale->id)
+                ->delete();
+
+            $sale->delete();
+        });
 
         return response()->json(['message' => 'Deleted successfully']);
+    }
+
+    /**
+     * Tahap 3: buat / perbarui satu entry Cash Flow (Kas Masuk,
+     * Category = Penjualan) yang terhubung 1:1 dengan record Sale ini,
+     * memakai updateOrCreate berdasar (source_type, source_id) supaya
+     * idempotent — dipanggil ulang saat update tidak membuat duplikat.
+     */
+    private function syncCashFlow(Sale $sale): void
+    {
+        $sale->loadMissing('inventory');
+
+        $itemName    = $sale->inventory->product_name ?? 'barang';
+        $description = "Penjualan {$itemName}";
+        if ($sale->customer_notes) {
+            $description .= " ({$sale->customer_notes})";
+        }
+
+        CashFlow::updateOrCreate(
+            [
+                'source_type' => CashFlow::SOURCE_SALE,
+                'source_id'   => $sale->id,
+            ],
+            [
+                'user_id'     => $sale->user_id,
+                'date'        => $sale->date,
+                'type'        => 'in', // Setiap Input Penjualan = Kas Masuk
+                'description' => $description,
+                'category'    => 'penjualan',
+                'amount'      => $sale->total_revenue,
+            ]
+        );
     }
 }

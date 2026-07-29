@@ -103,6 +103,34 @@ const CATEGORIES = [
   { value: "lain-lain",   label: "Lain-lain" },
 ];
 
+// Tahap 3: badge kecil untuk menandai entry yang otomatis tersinkron dari
+// Input Pembelian / Input Penjualan, supaya jelas terlihat beda dari entry
+// manual yang dibuat langsung lewat "+ Add Cash In/Out" di halaman ini.
+function SourceBadge({ row }) {
+  if (!row.is_auto) {
+    return <span style={{ fontSize: 12, color: "#9ca3af" }}>Manual</span>;
+  }
+  const isPurchase = row.source_type === "purchase";
+  return (
+    <span
+      title="Entry ini otomatis dibuat & disinkronkan dari data transaksi asli — edit/hapus lewat halaman aslinya."
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontSize: 11,
+        fontWeight: 600,
+        padding: "3px 8px",
+        borderRadius: 999,
+        background: isPurchase ? "#fee2e2" : "#dcfce7",
+        color: isPurchase ? "#b91c1c" : "#15803d",
+      }}
+    >
+      ● Otomatis · {isPurchase ? "Input Pembelian" : "Input Penjualan"}
+    </span>
+  );
+}
+
 export default function CashFlowPage() {
   const { showNotif } = useNotif();
   const [data, setData]       = useState([]);
@@ -162,6 +190,9 @@ export default function CashFlowPage() {
     }
   };
 
+  // Catatan: entry yang is_auto === true (otomatis dari Input Pembelian /
+  // Input Penjualan) ditolak oleh backend (422) kalau dihapus dari sini —
+  // pesan errornya akan diteruskan lewat notifikasi ke user.
   const handleDelete = async (id) => {
     try {
       await apiFetch(`/cashflows/${id}`, { method: "DELETE" });
@@ -187,7 +218,9 @@ export default function CashFlowPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div>
             <h3 style={styles.cardTitle}>Cash Flow Records</h3>
-            <p style={styles.cardSub}>All cash in and cash out transactions</p>
+            <p style={styles.cardSub}>
+              All cash in and cash out transactions — termasuk otomatis dari Input Pembelian &amp; Input Penjualan
+            </p>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn variant="success" onClick={openIn}>+ Add Cash In</Btn>
@@ -198,13 +231,14 @@ export default function CashFlowPage() {
           columns={[
             { key: "date",        label: "DATE",     render: r => fmtDate(r.date) },
             { key: "type",        label: "TYPE", render: r => (
-              <span style={{ color: r.type === "in" ? "#4F46E5" : "#D3D3D3", fontWeight: 600 }}>
+              <span style={{ color: r.type === "in" ? "#16a34a" : "#dc2626", fontWeight: 600 }}>
                 {r.type === "in" ? "Cash In" : "Cash Out"}
               </span>
             )},
             { key: "description", label: "DESCRIPTION" },
             { key: "category",    label: "CATEGORY" },
             { key: "amount",      label: "AMOUNT", render: r => toRp(r.amount) },
+            { key: "source",      label: "SOURCE", render: r => <SourceBadge row={r} /> },
           ]}
           data={paginated}
           emptyMsg={loading ? "Memuat data..." : 'No cash flow records yet. Click "Add Cash In" or "Add Cash Out" to create one.'}
