@@ -93,7 +93,7 @@
         @endforelse
     </table>
 
-    <div class="footer">Laporan Keuangan UMKM &middot; powered by Bina Nusantara University:Lab Accounting</div>
+    <div class="footer">Laporan Keuangan UMKM &middot; didukung oleh Universitas Bina Nusantara:Lab Accounting</div>
 
 </body>
 </html>
