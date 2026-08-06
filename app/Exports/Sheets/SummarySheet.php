@@ -28,12 +28,15 @@ class SummarySheet implements FromArray, WithTitle, WithStyles, ShouldAutoSize
             ['Dicetak: ' . Carbon::now()->format('d M Y')],
             [],
             ['RINGKASAN LABA RUGI'],
-            ['Total Pendapatan',        $this->profitLoss['total_income']],
-            ['HPP (Pembelian)',         $this->profitLoss['cogs']],
-            ['Biaya Operasional',       $this->profitLoss['operating_expenses']],
-            ['Total Beban',             $this->profitLoss['total_expenses']],
-            ['Laba / Rugi Bersih',      $this->profitLoss['net_profit']],
-            ['Margin Laba (%)',         $this->profitLoss['profit_margin']],
+            ['Total Pendapatan',                    $this->profitLoss['total_income']],
+            // Tahap 4: Potential Income (Nilai Inventory) — persis setelah Total
+            // Pendapatan. Informasional saja, tidak ikut ke Total Beban / Laba Rugi.
+            ['Potential Income (Nilai Inventory)',  $this->profitLoss['potential_income']],
+            ['HPP (Pembelian)',                     $this->profitLoss['cogs']],
+            ['Biaya Operasional',                   $this->profitLoss['operating_expenses']],
+            ['Total Beban',                         $this->profitLoss['total_expenses']],
+            ['Laba / Rugi Bersih',                  $this->profitLoss['net_profit']],
+            ['Margin Laba (%)',                     $this->profitLoss['profit_margin']],
             [],
             ['RINGKASAN ARUS KAS'],
             ['Kas Masuk',  $this->cashFlow['inflow']],
@@ -51,7 +54,9 @@ class SummarySheet implements FromArray, WithTitle, WithStyles, ShouldAutoSize
     {
         $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle('A6')->getFont()->setBold(true);
-        $sheet->getStyle('A14')->getFont()->setBold(true);
+        // Tahap 4: "RINGKASAN ARUS KAS" bergeser dari row 14 → row 15 karena
+        // ada 1 baris baru (Potential Income) yang disisipkan di atasnya.
+        $sheet->getStyle('A15')->getFont()->setBold(true);
         return [];
     }
 }

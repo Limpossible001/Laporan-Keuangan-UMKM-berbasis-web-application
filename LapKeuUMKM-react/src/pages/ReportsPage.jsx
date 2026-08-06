@@ -50,6 +50,18 @@ function ReportProfitLoss({ data }) {
       <h3 style={styles.cardTitle}>Profit & Loss Statement</h3>
       <ReportRow section="INCOME">
         <ReportLine label="Total Income" value={toRp(data.total_income)} color="#22c55e" />
+        {/* Tahap 4: Potential Income (Nilai Inventory) — persis setelah Total Income.
+            Ini BUKAN pendapatan riil, murni estimasi nilai jual stok inventory saat ini
+            (quantity × harga jual), supaya pemilik usaha yakin barang di gudang masih
+            punya potensi pendapatan sekian. Tidak ikut dihitung ke Net Profit/Loss. */}
+        <ReportLine
+          label="Potential Income"
+          value={toRp(data.potential_income)}
+          color="#6366f1"
+        />
+        <p style={{ fontSize: 11, color: "#9ca3af", margin: "4px 0 0" }}>
+          Estimasi nilai jual SELURUH stok inventory saat ini (PERHATIAN : bukan pendapatan riil, hanya potensi.)
+        </p>
       </ReportRow>
       <ReportRow section="EXPENSES">
         <ReportLine label="HPP (Pembelian)"   value={toRp(data.cogs)} color="#ef4444" />

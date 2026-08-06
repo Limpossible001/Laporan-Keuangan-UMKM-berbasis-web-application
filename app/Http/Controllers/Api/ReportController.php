@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Exports\FinancialReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\CashFlow;
+use App\Models\Inventory;
 use App\Models\Purchase;
 use App\Models\Sale;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -60,6 +61,24 @@ class ReportController extends Controller
     }
 
     /**
+     * Tahap 4: hitung "Potential Income (Nilai Inventory)" — estimasi nilai
+     * jual dari SELURUH stok inventory user SAAT INI (quantity × unit_price).
+     *
+     * Ini murni angka informasional untuk meyakinkan pemilik usaha bahwa
+     * barang yang masih ada di gudang punya potensi pendapatan sekian —
+     * BUKAN pendapatan riil, sehingga SENGAJA TIDAK diikutkan ke perhitungan
+     * total_income / total_expenses / net_profit di bawah. Juga sengaja
+     * tidak difilter by tanggal (from/to) karena ini snapshot stok "saat
+     * laporan dibuka", bukan transaksi dalam periode tertentu.
+     */
+    private function calcPotentialIncome(int $userId): float
+    {
+        return (float) (Inventory::where('user_id', $userId)
+            ->selectRaw('COALESCE(SUM(quantity * unit_price), 0) as total')
+            ->value('total') ?? 0);
+    }
+
+    /**
      * Hitung Laba Rugi: Income (Sales) - COGS (Purchases) - OpEx (CashFlow keluar)
      * FIX: tambah parameter $userId — sebelumnya laporan siapa pun menghitung
      * SEMUA transaksi di database, bukan cuma milik user yang login.
@@ -71,11 +90,16 @@ class ReportController extends Controller
      * $cogs (dari tabel purchases) dan sekali lagi lewat $opEx (dari
      * cash_flows) — sehingga Net Profit jadi salah (lebih rendah dari
      * seharusnya).
+     *
+     * Tahap 4: tambah 'potential_income' persis setelah 'total_income' —
+     * lihat calcPotentialIncome() di atas untuk detail & alasan kenapa
+     * angka ini TIDAK ikut memengaruhi total_expenses / net_profit.
      */
     public function buildProfitLoss(int $userId, Carbon $from, Carbon $to): array
     {
         $totalIncome = (float) Sale::where('user_id', $userId)
             ->whereBetween('date', [$from, $to])->sum('total_revenue');
+        $potentialIncome = $this->calcPotentialIncome($userId);
         $cogs        = (float) Purchase::where('user_id', $userId)
             ->whereBetween('date', [$from, $to])->sum('total_amount');
         $opEx        = (float) CashFlow::where('user_id', $userId)
@@ -95,6 +119,8 @@ class ReportController extends Controller
 
         return [
             'total_income'        => $totalIncome,
+            // Tahap 4: NEW — persis setelah total_income, sesuai permintaan.
+            'potential_income'    => $potentialIncome,
             'cogs'                => $cogs,
             'operating_expenses'  => $opEx,
             'total_expenses'      => $totalExpenses,

@@ -17,9 +17,11 @@
         th, td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 11px; }
         th { background: #f9fafb; font-weight: bold; }
         .text-right { text-align: right; }
-        .total-row td { font-weight: bold; border-top: 2px solid #111827; }
+        .total-row td { font-weight: bold; border-top: 2px solid #e5e7eb; }
         .positive { color: #16a34a; }
         .negative { color: #dc2626; }
+        .potential { color: #4F46E5; }
+        .note-row td { font-size: 9px; color: #9ca3af; font-style: italic; border-bottom: 1px solid #e5e7eb; }
         .footer { margin-top: 24px; font-size: 9px; color: #9ca3af; text-align: center; }
     </style>
 </head>
@@ -35,6 +37,11 @@
     <div class="section-title">LAPORAN LABA RUGI (PROFIT &amp; LOSS)</div>
     <table>
         <tr><td>Total Pendapatan (Penjualan)</td><td class="text-right positive">Rp {{ number_format($profitLoss['total_income'], 0, ',', '.') }}</td></tr>
+        {{-- Tahap 4: Potential Income (Nilai Inventory) — persis setelah Total Pendapatan.
+             Angka informasional saja (estimasi nilai jual stok saat ini), TIDAK ikut
+             dijumlahkan ke Laba/Rugi Bersih di bawah. --}}
+        <tr><td>Potential Income (Nilai Inventory)</td><td class="text-right potential">Rp {{ number_format($profitLoss['potential_income'], 0, ',', '.') }}</td></tr>
+        <tr class="note-row"><td colspan="2">Estimasi nilai jual seluruh stok inventory saat ini (qty × harga jual) — bukan pendapatan riil, hanya potensi. Tidak memengaruhi Laba/Rugi Bersih.</td></tr>
         <tr><td>HPP / Biaya Pembelian</td><td class="text-right negative">Rp ({{ number_format($profitLoss['cogs'], 0, ',', '.') }})</td></tr>
         <tr><td>Biaya Operasional</td><td class="text-right negative">Rp ({{ number_format($profitLoss['operating_expenses'], 0, ',', '.') }})</td></tr>
         <tr class="total-row">
@@ -86,7 +93,7 @@
         @endforelse
     </table>
 
-    <div class="footer">Laporan Keuangan UMKM &middot; dibuat otomatis oleh sistem</div>
+    <div class="footer">Laporan Keuangan UMKM &middot; powered by Bina Nusantara University:Lab Accounting</div>
 
 </body>
 </html>
