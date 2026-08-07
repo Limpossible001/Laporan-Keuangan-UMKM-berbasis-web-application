@@ -215,6 +215,51 @@ class ReportController extends Controller
         ]);
     }
 
+    /**
+     * Kapitalisasi huruf pertama tiap kata pada teks kategori, khusus untuk
+     * tampilan hasil ekspor (PDF & Excel). Contoh: "pembelian" -> "Pembelian".
+     *
+     * Sengaja HANYA dipakai di exportPdf()/exportExcel(), bukan di
+     * buildCategory()/buildCashFlow() langsung, supaya endpoint live
+     * (/api/reports/category, /api/reports/cash-flow) yang dipakai halaman
+     * dashboard tidak ikut berubah — perubahan ini murni permintaan tampilan
+     * pada file hasil ekspor.
+     */
+    private function capitalizeCategoryLabel(?string $category): string
+    {
+        return $category === null || $category === ''
+            ? ''
+            : ucwords(strtolower(trim($category)));
+    }
+
+    /**
+     * Kapitalisasi key kategori (income/expense) pada hasil buildCategory().
+     * NB: 'income'/'expense' dari buildCategory() berupa Collection (hasil
+     * groupBy()->map()), bukan array murni — jangan diberi type hint array.
+     */
+    private function capitalizeCategoryBreakdown(array $category): array
+    {
+        $capitalize = fn ($group) => collect($group)
+            ->mapWithKeys(fn ($amount, $cat) => [$this->capitalizeCategoryLabel($cat) => $amount])
+            ->all();
+
+        return [
+            'income'  => $capitalize($category['income']  ?? []),
+            'expense' => $capitalize($category['expense'] ?? []),
+        ];
+    }
+
+    /** Kapitalisasi field 'category' pada tiap baris detail cash flow. */
+    private function capitalizeCashFlowDetails(array $cashFlow): array
+    {
+        $cashFlow['details'] = array_map(function (array $row) {
+            $row['category'] = $this->capitalizeCategoryLabel($row['category'] ?? '');
+            return $row;
+        }, $cashFlow['details'] ?? []);
+
+        return $cashFlow;
+    }
+
     /** GET /api/reports/export/pdf */
     public function exportPdf(Request $request)
     {
@@ -230,8 +275,8 @@ class ReportController extends Controller
             'periodLabel'  => $from->translatedFormat('d M Y') . ' – ' . $to->translatedFormat('d M Y'),
             'printedAt'    => Carbon::now()->translatedFormat('d M Y'),
             'profitLoss'   => $this->buildProfitLoss($userId, $from, $to),
-            'cashFlow'     => $this->buildCashFlow($userId, $from, $to),
-            'category'     => $this->buildCategory($userId, $from, $to),
+            'cashFlow'     => $this->capitalizeCashFlowDetails($this->buildCashFlow($userId, $from, $to)),
+            'category'     => $this->capitalizeCategoryBreakdown($this->buildCategory($userId, $from, $to)),
         ];
 
         $pdf = Pdf::loadView('reports.pdf', $data)->setPaper('a4', 'portrait');
@@ -254,8 +299,8 @@ class ReportController extends Controller
         return Excel::download(
             new FinancialReportExport(
                 $this->buildProfitLoss($userId, $from, $to),
-                $this->buildCashFlow($userId, $from, $to),
-                $this->buildCategory($userId, $from, $to),
+                $this->capitalizeCashFlowDetails($this->buildCashFlow($userId, $from, $to)),
+                $this->capitalizeCategoryBreakdown($this->buildCategory($userId, $from, $to)),
                 $businessName,
                 $from,
                 $to
